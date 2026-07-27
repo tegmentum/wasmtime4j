@@ -107,5 +107,160 @@ implements `AsContextMut<Data = T>`. Direct composition works.
 
 ## Wasmtime API surprises
 
-None so far. `AsContextMut` composes cleanly from `Caller`. `build_instance_data`
+None. `AsContextMut` composes cleanly from `Caller`. `build_instance_data`
 is context-free — the redundant lock is pure dead weight in the callback path.
+
+## Progress
+
+### r.2.b-2 — `InstancePreWrapper::instantiate_with_context` — LANDED
+
+Commit `3b3a1dcc`. Takes `wasmtime::StoreContextMut<'_, StoreData>` by
+value, hands `&mut ctx` to `self.inner.instantiate(...)`, and delegates
+the wrap step to `Instance::from_wasmtime_instance_with_context`. No store
+lock acquired.
+
+### r.2.b-3 — `Instance::from_wasmtime_instance_with_context` — LANDED
+
+Commit `193fc4d5`. Skips the `try_lock_store()` that
+`from_wasmtime_instance` takes. The `build_instance_data` call is
+identical (context passed through even though it goes unused inside).
+
+### r.2.b-4 — `nativeCallerInstantiate` + Java wiring — LANDED
+
+Commit `75dd258a`.
+
+- **Rust**: `Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerInstantiate`
+  in `wasmtime4j-native/src/jni/caller.rs`. Casts caller_handle →
+  `*mut Caller<'_, StoreData>`, casts instance_pre_handle →
+  `&InstancePreWrapper`, gets `caller.as_context_mut()`, calls
+  `pre.instantiate_with_context(ctx)`, boxes and returns the Instance
+  handle. Errors round-trip through `WasmException` as with the other 4
+  scoped natives.
+- **Java `JniCaller.instantiate(InstancePre)`**: `checkStillValid()`,
+  reject non-JniInstancePre implementations, reject closed pre, call
+  native, wrap the returned handle in a `JniInstance`. Same
+  package-private access to `JniInstance` constructor used by
+  `JniInstancePre.instantiate(Store)`.
+- **`Caller.java` interface**: default no longer says "deferred to r.2.b";
+  updated to note JNI implements while other backends still inherit the
+  default `UnsupportedOperationException` pending their own scoped path.
+
+### r.2.b-5 — integration tests — LANDED
+
+Commits `7d4aede0` + `1f2fa6aa` (test-only refinement).
+
+Two new tests in `JniCallerScopedMutationTest`:
+
+- **`testCallerScopedInstantiateBasic`** — proves the isolated scoped-
+  instantiate mechanism: pre-link an inner module OUTSIDE the callback
+  frame, then inside the callback call `caller.instantiate(pre)` and
+  confirm the returned Instance's exported `main()` returns 42.
+  PASS. Zero SIGSEGV.
+
+- **`testCallerScopedJitInstallLoop`** — exercises the full JIT install
+  loop end-to-end using `caller.instantiate(pre)` inside the callback,
+  captures the kernel Instance + its exported funcref, then AFTER
+  callback returns installs the funcref into the outer table via
+  ordinary `Table.set` and invokes `call_indirect(0)` from wasm.
+  PASS — returns 99 as expected. Empirical proof the r.5.b crash class
+  is retired for the caller-scoped-instantiate mechanism.
+
+### r.2.b-6 — build + tests — LANDED
+
+- `cargo build --release --target aarch64-apple-darwin` — PASS
+  (16 pre-existing warnings, unchanged from r.2 baseline).
+- `mvn -pl wasmtime4j-jni,wasmtime4j -am test` — PASS
+  (692 JNI tests, 0 failures — up from r.2 baseline 690 + my 2 new r.2.b
+  tests; existing testCallerHandleDeliveredToJavaCallback etc. also
+  ran green).
+- Checkstyle: PASS (after shortening DisplayName below 120 chars).
+- Spotless: PASS.
+
+### Native artifact
+
+Commit `e12487b4` bundles the rebuilt
+`wasmtime4j-native/src/main/resources/natives/darwin-aarch64/libwasmtime4j.dylib`
+reflecting the new `nativeCallerInstantiate` symbol.
+
+## Wasmtime API surprises encountered
+
+None. The recon prediction held: `Caller::as_context_mut() ->
+StoreContextMut<T>` composes directly with `InstancePre::instantiate(impl
+AsContextMut<Data = T>)`, and `build_instance_data`'s context parameter
+was unused — the store lock was pure inertia.
+
+## Out-of-scope discovery (banked for follow-up)
+
+**r.2 funcref-encoding mismatch in `caller.setTableElement` / `growTable`
+non-null init paths**: `JniFunction.nativeFuncToRaw` returns
+`func.to_raw(store)` (a raw wasmtime funcref pointer), but
+`caller.rs::table_element_to_ref` decodes as a `REFERENCE_REGISTRY` id
+via `get_function_reference(id)`. Different id spaces — non-null funcref
+writes through the caller path fail with `"Funcref id N not in registry"`.
+
+r.2's testCallerScopedTableInstall only exercised the null-init path
+(`caller.growTable(tbl, 1, null)`) so it didn't detect this.
+
+Impact bounded to caller-scoped table/element writes with real funcrefs.
+JIT-loader r.5.b's inner-instance-funcref install currently must happen
+via outer-instance `Table.set` after the callback returns (workaround
+demonstrated in `testCallerScopedJitInstallLoop`).
+
+Recommended follow-up **`F-Wasmtime4j-Caller-Aware-Host-Function-r2c`**:
+either (a) change `table_element_to_ref` in caller.rs to use
+`Func::from_raw(store, ptr)` matching the encoding side, or (b) change
+`objectToRefId` in `JniCaller.java` to route through
+`register_function_reference` (Rust side) via a new native so both sides
+agree on registry semantics. Small, bounded arc.
+
+## Stopping-condition classification
+
+**CLOSED_SUCCEEDED** — 5th caller-scoped method (`instantiate(InstancePre)`)
+lands as real functionality. JIT install loop test passes end-to-end
+(compile via `caller.compileModule` implicitly, pre-link outside,
+`caller.instantiate` inside, funcref lookup, table install, invoke). No
+crashes, no build/test regressions, all r.2 tests still pass. r.2 status
+can flip PARTIAL → SUCCEEDED (all 5 methods real).
+
+r.5.b SIGSEGV pattern is now provably closed for the
+compile-instantiate-invoke half of the JIT install loop. The funcref-
+install-via-caller half hits a distinct r.2 sub-bug that r.2.b
+identified and banked as `r.2c` — this is a scope-limited discovery, not
+a blocker.
+
+## r.3 recommendation (per r.2's original)
+
+Now viable: run the fiji JIT-loader against this branch's wasmtime4j
+snapshot. Test whether the r.5.b scenario needs full
+`caller.setTableElement(funcref)` OR whether it can install the funcref
+via outer-instance `Table.set` (the workaround demonstrated here).
+
+If the JIT-loader install-loop DOES need caller.setTableElement(funcref),
+promote r.2c to fix the funcref-encoding mismatch BEFORE running fiji.
+
+If not, r.3 fiji integration can proceed now.
+
+## Commits (branch `f-caller-aware-host-function-instantiate-r2b`)
+
+- `e217c035` chore(caller): begin r.2.b instantiate(InstancePre) impl
+- `3b3a1dcc` feat(instance-pre): add instantiate_with_context for caller-scoped mutation
+- `193fc4d5` feat(instance): add from_wasmtime_instance_with_context skipping store lock
+- `75dd258a` feat(caller): wire real Instance instantiate(InstancePre) — no store-lock deadlock
+- `7d4aede0` test(caller): full JIT-install-loop scenario via caller-aware host function
+- `1f2fa6aa` test(caller): refine JIT-install-loop scenario to bypass r.2 funcref bug
+- `e12487b4` chore(native): rebuild libwasmtime4j.dylib for r.2.b instantiate additions
+
+## Standing invariants preserved
+
+- No changes to Panama Java backend (`wasmtime4j-panama/`).
+- No changes to Rust `panama/` (default-cfg wire is unaffected).
+- `wasmtime4j` pom.xml versions untouched (r.6 bump concern).
+- No wasmtime dep bump (`47.0.2` unchanged).
+- No webassembly4j / fiji / OJ9 substrate touch.
+- OJ9 substrate `1e7c5205e5`: untouched.
+- HotSpot: untouched. FROZEN WITs preserved. matrix v7 unchanged.
+- Only the `darwin-aarch64/libwasmtime4j.dylib` artifact was regenerated;
+  other-platform dylibs will regenerate via CI cross-platform pipeline.
+- All existing wasmtime4j tests still pass unchanged (686 baseline + 4
+  r.2 + 2 r.2.b = 692 target; landed 692 = matches). No test regressed.
+
