@@ -1,7 +1,7 @@
 //! JNI bindings for Caller context operations
 
-use jni::objects::{JClass, JString};
-use jni::sys::{jboolean, jint, jintArray, jlong, jsize};
+use jni::objects::{JByteArray, JClass, JString};
+use jni::sys::{jboolean, jbyteArray, jint, jintArray, jlong, jsize};
 use jni::JNIEnv;
 
 use wasmtime::Caller as WasmtimeCaller;
@@ -538,5 +538,144 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeDebugExi
         }
         Ok(None) => null_array,
         Err(_) => null_array,
+    }
+}
+
+/// Read a byte range from a caller-exported memory by name (F-Wasmtime4j-Caller-Scoped-Memory-IO
+/// r.1 2026-07-31). Uses `caller.get_export(name).into_memory()` + `Memory::read` so registration
+/// is via the callback's live borrow, not the api-layer memory adapter's frame-scoped handle.
+///
+/// Returns the read byte array on success; throws a WasmException on failure.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerReadMemory(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    memory_name: JString,
+    offset: jlong,
+    length: jint,
+) -> jbyteArray {
+    let null_array = std::ptr::null_mut();
+    if caller_handle == 0 {
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/exception/WasmException",
+            "readMemory: null caller handle",
+        );
+        return null_array;
+    }
+
+    let name: String = match env.get_string(&memory_name) {
+        Ok(s) => s.into(),
+        Err(_) => {
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                "readMemory: memoryName is not a valid Java String",
+            );
+            return null_array;
+        }
+    };
+
+    // Do the read into a Rust Vec<u8> without touching env — env is mutably borrowed later.
+    let read_result: Result<Vec<u8>, String> = (|| {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+
+        let export = caller
+            .get_export(&name)
+            .ok_or_else(|| format!("caller has no exported memory named '{}'", name))?;
+        let memory = export
+            .into_memory()
+            .ok_or_else(|| format!("caller export '{}' is not a memory", name))?;
+
+        let mut buf = vec![0u8; length as usize];
+        memory
+            .read(&mut caller.as_context_mut(), offset as usize, &mut buf)
+            .map_err(|e| format!("Caller-scoped memory read failed: {}", e))?;
+        Ok(buf)
+    })();
+
+    match read_result {
+        Ok(buf) => match env.byte_array_from_slice(&buf) {
+            Ok(arr) => arr.into_raw(),
+            Err(e) => {
+                let _ = env.throw_new(
+                    "ai/tegmentum/wasmtime4j/exception/WasmException",
+                    format!("readMemory: failed to allocate return array: {}", e),
+                );
+                null_array
+            }
+        },
+        Err(msg) => {
+            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/WasmException", msg);
+            null_array
+        }
+    }
+}
+
+/// Write a byte range into a caller-exported memory by name (F-Wasmtime4j-Caller-Scoped-Memory-IO
+/// r.1 2026-07-31). Mirror of `nativeCallerReadMemory`.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerWriteMemory(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    memory_name: JString,
+    offset: jlong,
+    bytes: jbyteArray,
+) {
+    if caller_handle == 0 {
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/exception/WasmException",
+            "writeMemory: null caller handle",
+        );
+        return;
+    }
+
+    let name: String = match env.get_string(&memory_name) {
+        Ok(s) => s.into(),
+        Err(_) => {
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                "writeMemory: memoryName is not a valid Java String",
+            );
+            return;
+        }
+    };
+
+    // Extract byte array data outside jni_try to avoid double-mutable borrow of env.
+    let data = match env
+        .convert_byte_array(unsafe { JByteArray::from_raw(bytes) })
+    {
+        Ok(d) => d,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/WasmException",
+                format!("writeMemory: failed to read bytes: {}", e),
+            );
+            return;
+        }
+    };
+
+    let write_result: Result<(), String> = (|| {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+
+        let export = caller
+            .get_export(&name)
+            .ok_or_else(|| format!("caller has no exported memory named '{}'", name))?;
+        let memory = export
+            .into_memory()
+            .ok_or_else(|| format!("caller export '{}' is not a memory", name))?;
+
+        memory
+            .write(&mut caller.as_context_mut(), offset as usize, &data)
+            .map_err(|e| format!("Caller-scoped memory write failed: {}", e))?;
+        Ok(())
+    })();
+
+    if let Err(msg) = write_result {
+        let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/WasmException", msg);
     }
 }
