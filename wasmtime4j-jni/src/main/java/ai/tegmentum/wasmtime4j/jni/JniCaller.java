@@ -639,4 +639,59 @@ final class JniCaller<T> implements Caller<T> {
    *     failure
    */
   private static native long nativeCallerInstantiate(long callerHandle, long instancePreHandle);
+
+  @Override
+  public byte[] readMemory(final String memoryName, final long offset, final int length)
+      throws WasmException {
+    if (memoryName == null) {
+      throw new IllegalArgumentException("memoryName cannot be null");
+    }
+    if (offset < 0) {
+      throw new IllegalArgumentException("offset must be non-negative");
+    }
+    if (length < 0) {
+      throw new IllegalArgumentException("length must be non-negative");
+    }
+    checkStillValid();
+    return nativeCallerReadMemory(callerHandle, memoryName, offset, length);
+  }
+
+  @Override
+  public void writeMemory(final String memoryName, final long offset, final byte[] bytes)
+      throws WasmException {
+    if (memoryName == null) {
+      throw new IllegalArgumentException("memoryName cannot be null");
+    }
+    if (offset < 0) {
+      throw new IllegalArgumentException("offset must be non-negative");
+    }
+    if (bytes == null) {
+      throw new IllegalArgumentException("bytes cannot be null");
+    }
+    checkStillValid();
+    nativeCallerWriteMemory(callerHandle, memoryName, offset, bytes);
+  }
+
+  /**
+   * Read a byte range from a caller-exported memory by name, via the caller-scoped native path.
+   *
+   * @param callerHandle the native caller handle
+   * @param memoryName name of the exported memory to look up
+   * @param offset byte offset into the memory
+   * @param length number of bytes to read
+   * @return the byte array read
+   */
+  private static native byte[] nativeCallerReadMemory(
+      long callerHandle, String memoryName, long offset, int length);
+
+  /**
+   * Write a byte range into a caller-exported memory by name, via the caller-scoped native path.
+   *
+   * @param callerHandle the native caller handle
+   * @param memoryName name of the exported memory to look up
+   * @param offset byte offset into the memory
+   * @param bytes bytes to write
+   */
+  private static native void nativeCallerWriteMemory(
+      long callerHandle, String memoryName, long offset, byte[] bytes);
 }
