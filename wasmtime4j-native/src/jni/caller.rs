@@ -809,6 +809,131 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerLi
     })
 }
 
+/// Define a memory extern into a Linker by looking it up on the caller by export name
+/// (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27, addendum).
+///
+/// Preferable to `nativeCallerLinkerDefineMemory` when the source memory is the caller's
+/// own export — avoids the api-layer registry-handle roundtrip that would otherwise fail
+/// with "Memory handle is not registered" (caller-scoped memory handles from
+/// `nativeGetMemory` are `Box<wasmtime::Memory>` raw handles, not registry-wrapped).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerLinkerDefineMemoryFromExport(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    linker_handle: jlong,
+    module_name: JString,
+    name: JString,
+    caller_export_name: JString,
+) -> jboolean {
+    if caller_handle == 0 || linker_handle == 0 {
+        return 0;
+    }
+    let module_name_str: String = match env.get_string(&module_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+    let export_name_str: String = match env.get_string(&caller_export_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+        let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+
+        let export = caller.get_export(&export_name_str).ok_or_else(|| WasmtimeError::Linker {
+            message: format!("caller has no export named '{}'", export_name_str),
+        })?;
+        let memory = export.into_memory().ok_or_else(|| WasmtimeError::Linker {
+            message: format!("caller export '{}' is not a memory", export_name_str),
+        })?;
+
+        let mut linker_lock = linker.inner()?;
+        linker_lock
+            .define(
+                &mut caller.as_context_mut(),
+                &module_name_str,
+                &name_str,
+                wasmtime::Extern::Memory(memory),
+            )
+            .map_err(|e| WasmtimeError::Linker {
+                message: format!(
+                    "Caller-scoped Linker.defineMemoryFromExport '{}::{}' (from '{}') failed: {}",
+                    module_name_str, name_str, export_name_str, e
+                ),
+            })?;
+
+        Ok(1)
+    })
+}
+
+/// Define a table extern into a Linker by looking it up on the caller by export name
+/// (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27, addendum).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerLinkerDefineTableFromExport(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    linker_handle: jlong,
+    module_name: JString,
+    name: JString,
+    caller_export_name: JString,
+) -> jboolean {
+    if caller_handle == 0 || linker_handle == 0 {
+        return 0;
+    }
+    let module_name_str: String = match env.get_string(&module_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+    let export_name_str: String = match env.get_string(&caller_export_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+        let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+
+        let export = caller.get_export(&export_name_str).ok_or_else(|| WasmtimeError::Linker {
+            message: format!("caller has no export named '{}'", export_name_str),
+        })?;
+        let table = export.into_table().ok_or_else(|| WasmtimeError::Linker {
+            message: format!("caller export '{}' is not a table", export_name_str),
+        })?;
+
+        let mut linker_lock = linker.inner()?;
+        linker_lock
+            .define(
+                &mut caller.as_context_mut(),
+                &module_name_str,
+                &name_str,
+                wasmtime::Extern::Table(table),
+            )
+            .map_err(|e| WasmtimeError::Linker {
+                message: format!(
+                    "Caller-scoped Linker.defineTableFromExport '{}::{}' (from '{}') failed: {}",
+                    module_name_str, name_str, export_name_str, e
+                ),
+            })?;
+
+        Ok(1)
+    })
+}
+
 /// Define a global extern into a Linker using the caller's live store context
 /// (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27).
 #[no_mangle]

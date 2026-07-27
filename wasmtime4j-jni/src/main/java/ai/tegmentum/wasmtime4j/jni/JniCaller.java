@@ -17,6 +17,7 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
+import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.ModuleExport;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
@@ -711,8 +712,9 @@ final class JniCaller<T> implements Caller<T> {
    * @throws WasmException on failure
    * @since 1.5.2
    */
-  void linkerDefineMemory(
-      final JniLinker<?> linker,
+  @Override
+  public void linkerDefineMemory(
+      final Linker<?> linker,
       final String moduleName,
       final String name,
       final WasmMemory memory)
@@ -729,9 +731,13 @@ final class JniCaller<T> implements Caller<T> {
     if (memory == null) {
       throw new IllegalArgumentException("memory cannot be null");
     }
+    if (!(linker instanceof JniLinker)) {
+      throw new IllegalArgumentException(
+          "Caller.linkerDefineMemory requires a JniLinker; got " + linker.getClass().getName());
+    }
     checkStillValid();
     final long memoryHandle = extractHandle(memory, "memory");
-    final long linkerHandle = linker.getNativeHandle();
+    final long linkerHandle = ((JniLinker<?>) linker).getNativeHandle();
     final boolean ok =
         nativeCallerLinkerDefineMemory(callerHandle, linkerHandle, moduleName, name, memoryHandle);
     if (!ok) {
@@ -740,14 +746,9 @@ final class JniCaller<T> implements Caller<T> {
     }
   }
 
-  /**
-   * Define a table extern on a linker using this caller's live store context
-   * (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27).
-   *
-   * @since 1.5.2
-   */
-  void linkerDefineTable(
-      final JniLinker<?> linker,
+  @Override
+  public void linkerDefineTable(
+      final Linker<?> linker,
       final String moduleName,
       final String name,
       final WasmTable table)
@@ -764,9 +765,13 @@ final class JniCaller<T> implements Caller<T> {
     if (table == null) {
       throw new IllegalArgumentException("table cannot be null");
     }
+    if (!(linker instanceof JniLinker)) {
+      throw new IllegalArgumentException(
+          "Caller.linkerDefineTable requires a JniLinker; got " + linker.getClass().getName());
+    }
     checkStillValid();
     final long tableHandle = extractHandle(table, "table");
-    final long linkerHandle = linker.getNativeHandle();
+    final long linkerHandle = ((JniLinker<?>) linker).getNativeHandle();
     final boolean ok =
         nativeCallerLinkerDefineTable(callerHandle, linkerHandle, moduleName, name, tableHandle);
     if (!ok) {
@@ -775,14 +780,9 @@ final class JniCaller<T> implements Caller<T> {
     }
   }
 
-  /**
-   * Define a global extern on a linker using this caller's live store context
-   * (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27).
-   *
-   * @since 1.5.2
-   */
-  void linkerDefineGlobal(
-      final JniLinker<?> linker,
+  @Override
+  public void linkerDefineGlobal(
+      final Linker<?> linker,
       final String moduleName,
       final String name,
       final WasmGlobal global)
@@ -799,9 +799,13 @@ final class JniCaller<T> implements Caller<T> {
     if (global == null) {
       throw new IllegalArgumentException("global cannot be null");
     }
+    if (!(linker instanceof JniLinker)) {
+      throw new IllegalArgumentException(
+          "Caller.linkerDefineGlobal requires a JniLinker; got " + linker.getClass().getName());
+    }
     checkStillValid();
     final long globalHandle = extractHandle(global, "global");
-    final long linkerHandle = linker.getNativeHandle();
+    final long linkerHandle = ((JniLinker<?>) linker).getNativeHandle();
     final boolean ok =
         nativeCallerLinkerDefineGlobal(callerHandle, linkerHandle, moduleName, name, globalHandle);
     if (!ok) {
@@ -818,4 +822,100 @@ final class JniCaller<T> implements Caller<T> {
 
   private static native boolean nativeCallerLinkerDefineGlobal(
       long callerHandle, long linkerHandle, String moduleName, String name, long globalHandle);
+
+  @Override
+  public void linkerDefineMemoryFromExport(
+      final Linker<?> linker,
+      final String moduleName,
+      final String name,
+      final String callerExportName)
+      throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("linker cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("moduleName cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    if (callerExportName == null) {
+      throw new IllegalArgumentException("callerExportName cannot be null");
+    }
+    if (!(linker instanceof JniLinker)) {
+      throw new IllegalArgumentException(
+          "Caller.linkerDefineMemoryFromExport requires a JniLinker; got "
+              + linker.getClass().getName());
+    }
+    checkStillValid();
+    final long linkerHandle = ((JniLinker<?>) linker).getNativeHandle();
+    final boolean ok =
+        nativeCallerLinkerDefineMemoryFromExport(
+            callerHandle, linkerHandle, moduleName, name, callerExportName);
+    if (!ok) {
+      throw new WasmException(
+          "Caller-scoped Linker.defineMemoryFromExport '"
+              + moduleName
+              + "::"
+              + name
+              + "' (from caller export '"
+              + callerExportName
+              + "') returned false");
+    }
+  }
+
+  @Override
+  public void linkerDefineTableFromExport(
+      final Linker<?> linker,
+      final String moduleName,
+      final String name,
+      final String callerExportName)
+      throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("linker cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("moduleName cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    if (callerExportName == null) {
+      throw new IllegalArgumentException("callerExportName cannot be null");
+    }
+    if (!(linker instanceof JniLinker)) {
+      throw new IllegalArgumentException(
+          "Caller.linkerDefineTableFromExport requires a JniLinker; got "
+              + linker.getClass().getName());
+    }
+    checkStillValid();
+    final long linkerHandle = ((JniLinker<?>) linker).getNativeHandle();
+    final boolean ok =
+        nativeCallerLinkerDefineTableFromExport(
+            callerHandle, linkerHandle, moduleName, name, callerExportName);
+    if (!ok) {
+      throw new WasmException(
+          "Caller-scoped Linker.defineTableFromExport '"
+              + moduleName
+              + "::"
+              + name
+              + "' (from caller export '"
+              + callerExportName
+              + "') returned false");
+    }
+  }
+
+  private static native boolean nativeCallerLinkerDefineMemoryFromExport(
+      long callerHandle,
+      long linkerHandle,
+      String moduleName,
+      String name,
+      String callerExportName);
+
+  private static native boolean nativeCallerLinkerDefineTableFromExport(
+      long callerHandle,
+      long linkerHandle,
+      String moduleName,
+      String name,
+      String callerExportName);
 }

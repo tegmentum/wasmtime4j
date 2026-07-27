@@ -17,6 +17,7 @@ package ai.tegmentum.wasmtime4j.func;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
+import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.ModuleExport;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
@@ -426,5 +427,105 @@ public interface Caller<T> {
       throws WasmException {
     throw new UnsupportedOperationException(
         "writeMemory not implemented on this Caller backend (JNI-only in wasmtime4j 1.7.0)");
+  }
+
+  /**
+   * Define a memory extern on a linker using this callback's live store context
+   * (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27).
+   *
+   * <p>Mirrors {@link Linker#defineMemory(ai.tegmentum.wasmtime4j.Store, String, String, WasmMemory)}
+   * but uses the caller's borrowed {@code AsContextMut} instead of a {@link
+   * ai.tegmentum.wasmtime4j.Store}, so a host callback can wire memory imports into a linker for a
+   * nested {@code InstancePre} without acquiring the store lock (which would deadlock).
+   *
+   * @param linker the linker to define the memory on
+   * @param moduleName import module name (e.g. "env")
+   * @param name import field name (e.g. "memory")
+   * @param memory the memory extern to bind
+   * @throws WasmException on runtime error
+   * @throws IllegalStateException if the callback has returned (use-after-return)
+   * @throws UnsupportedOperationException if the backend has not implemented scoped
+   *     linker-define-memory
+   * @since 1.5.2
+   */
+  default void linkerDefineMemory(
+      final Linker<?> linker, final String moduleName, final String name, final WasmMemory memory)
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "linkerDefineMemory not implemented on this Caller backend"
+            + " (JNI-only in wasmtime4j 1.5.2)");
+  }
+
+  /**
+   * Define a table extern on a linker using this callback's live store context.
+   * See {@link #linkerDefineMemory} for scoped-context rationale.
+   *
+   * @since 1.5.2
+   */
+  default void linkerDefineTable(
+      final Linker<?> linker, final String moduleName, final String name, final WasmTable table)
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "linkerDefineTable not implemented on this Caller backend"
+            + " (JNI-only in wasmtime4j 1.5.2)");
+  }
+
+  /**
+   * Define a global extern on a linker using this callback's live store context.
+   * See {@link #linkerDefineMemory} for scoped-context rationale.
+   *
+   * @since 1.5.2
+   */
+  default void linkerDefineGlobal(
+      final Linker<?> linker, final String moduleName, final String name, final WasmGlobal global)
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "linkerDefineGlobal not implemented on this Caller backend"
+            + " (JNI-only in wasmtime4j 1.5.2)");
+  }
+
+  /**
+   * Define a memory extern on a linker by looking it up on the caller by export name
+   * (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 addendum, 2026-07-27).
+   *
+   * <p>Preferable to {@link #linkerDefineMemory} when the source is the caller's own
+   * export — the api-layer WasmMemory handle path fails because caller-scoped memory
+   * handles from {@code Caller.getMemory} are not registered in the outer memory
+   * registry. This variant uses {@code caller.get_export(callerExportName).into_memory()}
+   * on the native side and bypasses the registry entirely.
+   *
+   * @param linker the linker to define the memory on
+   * @param moduleName import module name (e.g. "env")
+   * @param name import field name (e.g. "memory")
+   * @param callerExportName the caller's memory export name to look up (e.g. "memory")
+   * @throws WasmException on runtime error (export not found, wrong extern kind)
+   * @since 1.5.2
+   */
+  default void linkerDefineMemoryFromExport(
+      final Linker<?> linker,
+      final String moduleName,
+      final String name,
+      final String callerExportName)
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "linkerDefineMemoryFromExport not implemented on this Caller backend"
+            + " (JNI-only in wasmtime4j 1.5.2)");
+  }
+
+  /**
+   * Define a table extern on a linker by looking it up on the caller by export name.
+   * See {@link #linkerDefineMemoryFromExport} for rationale.
+   *
+   * @since 1.5.2
+   */
+  default void linkerDefineTableFromExport(
+      final Linker<?> linker,
+      final String moduleName,
+      final String name,
+      final String callerExportName)
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "linkerDefineTableFromExport not implemented on this Caller backend"
+            + " (JNI-only in wasmtime4j 1.5.2)");
   }
 }
