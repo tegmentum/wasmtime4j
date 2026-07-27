@@ -486,6 +486,76 @@ impl Table {
             })
     }
 
+    /// Read the current size of the table using a wasmtime `StoreContext`
+    /// borrowed from an active host callback (F-Wasmtime4j-Caller-Scoped-Store-
+    /// Reentrancy r.2 slice 1 2026-07-27).
+    ///
+    /// Callback-safe counterpart to [`Table::size`] — the outer `size` calls
+    /// `Store::with_context_ro` which re-acquires the store's ReentrantLock,
+    /// deadlocking / SIGSEGVing from a callback frame per
+    /// `doctrine-store-reentrant-lock-blocks-in-callback-2026-07-27`. This
+    /// variant uses the caller's borrowed `StoreContext` directly, bypassing
+    /// the store lock.
+    pub fn size_with_context<T: 'static>(
+        &self,
+        ctx: &wasmtime::StoreContext<'_, T>,
+    ) -> WasmtimeResult<u64> {
+        let table = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire table lock: {}", e),
+        })?;
+        Ok(table.size(ctx))
+    }
+
+    /// Read table type information using a wasmtime `StoreContext` borrowed
+    /// from an active host callback. Callback-safe counterpart to
+    /// [`Table::table_type`].
+    pub fn table_type_with_context<T: 'static>(
+        &self,
+        ctx: &wasmtime::StoreContext<'_, T>,
+    ) -> WasmtimeResult<TableType> {
+        let table = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire table lock: {}", e),
+        })?;
+        Ok(table.ty(ctx))
+    }
+
+    /// Read a table element using a wasmtime `StoreContextMut` borrowed from
+    /// an active host callback. Callback-safe counterpart to [`Table::get`].
+    ///
+    /// Uses `AsContextMut` rather than `AsContext` because wasmtime's
+    /// `Table::get` requires `impl AsContextMut` (it may need to root
+    /// references into the store's GC set on retrieval).
+    pub fn get_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+        index: u64,
+    ) -> WasmtimeResult<TableElement> {
+        let table = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire table lock: {}", e),
+        })?;
+
+        // Bounds check against callback-live table size (not the outer
+        // Store's — outer size may lag behind if the callback has grown the
+        // table since entry).
+        let table_size = table.size(&*ctx);
+        if index >= table_size {
+            return Err(WasmtimeError::Runtime {
+                message: format!(
+                    "Table index {} out of bounds (table size: {})",
+                    index, table_size
+                ),
+                backtrace: None,
+            });
+        }
+
+        let wasmtime_value = table.get(ctx, index).ok_or_else(|| WasmtimeError::Runtime {
+            message: format!("Failed to get table element at index {}", index),
+            backtrace: None,
+        })?;
+
+        Self::wasmtime_val_to_table_element(wasmtime_value, &self.metadata.element_type)
+    }
+
     /// Grow the table by the specified number of elements
     pub fn grow(&self, store: &Store, delta: u32, init_value: TableElement) -> WasmtimeResult<u64> {
         // Validate that the init_value type matches the table's element type
