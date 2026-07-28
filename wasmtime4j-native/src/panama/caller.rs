@@ -580,3 +580,252 @@ pub extern "C" fn wasmtime4j_panama_caller_write_memory(
         Ok(())
     })
 }
+
+// ===========================================================================
+// F-Wasmtime4j-Panama-Caller-Scoped-Mutation-FFI r.4 slice 3 (2026-07-28).
+//
+// Instantiate + Linker.define_{memory,table,global} FFI parity. Bodies port
+// from JNI's `nativeCallerInstantiate` + `nativeCallerLinkerDefineMemory` /
+// `Table` / `Global` verbatim. Same registry-lookup + as_context_mut() paths.
+//
+// FromExport variants excluded per charter §Out-of-scope — Panama picks up
+// a cleaner by-handle path from the start; if the by-handle path has the
+// same "not registered" bug pattern, addressed in a follow-on slice on
+// demand.
+// ===========================================================================
+
+/// Instantiate an `InstancePre` against the caller's live wasmtime context.
+///
+/// Writes the resulting instance handle to `*instance_out` and returns 0
+/// on success. On failure, `*instance_out` is set to null and a non-zero
+/// error code is returned (error retrievable via last-error FFI).
+///
+/// Safety: `instance_out` must be a valid `*mut *mut c_void`.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_instantiate(
+    caller_ptr: *mut c_void,
+    instance_pre_ptr: *mut c_void,
+    instance_out: *mut *mut c_void,
+) -> c_int {
+    if instance_out.is_null() {
+        return -1;
+    }
+    unsafe {
+        *instance_out = std::ptr::null_mut();
+    }
+    if caller_ptr.is_null() || instance_pre_ptr.is_null() {
+        return -1;
+    }
+    ffi_utils::ffi_try_code(|| {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        let pre = unsafe {
+            &*(instance_pre_ptr as *const crate::linker::InstancePreWrapper)
+        };
+
+        let ctx = caller.as_context_mut();
+        let instance = pre.instantiate_with_context(ctx)?;
+        unsafe {
+            *instance_out = Box::into_raw(Box::new(instance)) as *mut c_void;
+        }
+        Ok(())
+    })
+}
+
+/// Define a memory extern into a Linker using the caller's live store
+/// context. Mirrors JNI's `nativeCallerLinkerDefineMemory`.
+///
+/// Returns 0 on success, non-zero error code on failure.
+///
+/// Safety: `module_name` and `name` must be valid nul-terminated C strings.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_linker_define_memory(
+    caller_ptr: *mut c_void,
+    linker_ptr: *mut c_void,
+    module_name: *const c_char,
+    name: *const c_char,
+    memory_ptr: *mut c_void,
+) -> c_int {
+    if caller_ptr.is_null()
+        || linker_ptr.is_null()
+        || memory_ptr.is_null()
+        || module_name.is_null()
+        || name.is_null()
+    {
+        return -1;
+    }
+    let module_name_str = match unsafe { std::ffi::CStr::from_ptr(module_name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return -1,
+    };
+    let name_str = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return -1,
+    };
+
+    ffi_utils::ffi_try_code(|| {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        let linker = unsafe {
+            crate::linker::core::get_linker_ref(linker_ptr as *const c_void)?
+        };
+        let memory =
+            unsafe { crate::memory::core::get_memory_ref(memory_ptr as *const c_void)? };
+
+        let extern_memory = if let Some(wasmtime_memory) = memory.inner() {
+            wasmtime::Extern::Memory(*wasmtime_memory)
+        } else if let Some(wasmtime_shared_memory) = memory.inner_shared() {
+            wasmtime::Extern::SharedMemory(wasmtime_shared_memory.clone())
+        } else {
+            return Err(crate::error::WasmtimeError::Linker {
+                message: format!(
+                    "Memory '{}::{}' has invalid variant",
+                    module_name_str, name_str
+                ),
+            });
+        };
+
+        let mut linker_lock = linker.inner()?;
+        linker_lock
+            .define(
+                &mut caller.as_context_mut(),
+                &module_name_str,
+                &name_str,
+                extern_memory,
+            )
+            .map_err(|e| crate::error::WasmtimeError::Linker {
+                message: format!(
+                    "Caller-scoped Linker.defineMemory '{}::{}' failed: {}",
+                    module_name_str, name_str, e
+                ),
+            })?;
+        Ok(())
+    })
+}
+
+/// Define a table extern into a Linker. Mirrors JNI's
+/// `nativeCallerLinkerDefineTable`. Returns 0 on success, non-zero on failure.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_linker_define_table(
+    caller_ptr: *mut c_void,
+    linker_ptr: *mut c_void,
+    module_name: *const c_char,
+    name: *const c_char,
+    table_ptr: *mut c_void,
+) -> c_int {
+    if caller_ptr.is_null()
+        || linker_ptr.is_null()
+        || table_ptr.is_null()
+        || module_name.is_null()
+        || name.is_null()
+    {
+        return -1;
+    }
+    let module_name_str = match unsafe { std::ffi::CStr::from_ptr(module_name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return -1,
+    };
+    let name_str = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return -1,
+    };
+
+    ffi_utils::ffi_try_code(|| {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        let linker = unsafe {
+            crate::linker::core::get_linker_ref(linker_ptr as *const c_void)?
+        };
+        let table = unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
+
+        let wasmtime_table_arc = table.wasmtime_table();
+        let wasmtime_table_lock =
+            wasmtime_table_arc
+                .lock()
+                .map_err(|e| crate::error::WasmtimeError::Concurrency {
+                    message: format!("Failed to lock table: {}", e),
+                })?;
+
+        let mut linker_lock = linker.inner()?;
+        linker_lock
+            .define(
+                &mut caller.as_context_mut(),
+                &module_name_str,
+                &name_str,
+                wasmtime::Extern::Table(*wasmtime_table_lock),
+            )
+            .map_err(|e| crate::error::WasmtimeError::Linker {
+                message: format!(
+                    "Caller-scoped Linker.defineTable '{}::{}' failed: {}",
+                    module_name_str, name_str, e
+                ),
+            })?;
+        Ok(())
+    })
+}
+
+/// Define a global extern into a Linker. Mirrors JNI's
+/// `nativeCallerLinkerDefineGlobal`. Returns 0 on success, non-zero on failure.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_linker_define_global(
+    caller_ptr: *mut c_void,
+    linker_ptr: *mut c_void,
+    module_name: *const c_char,
+    name: *const c_char,
+    global_ptr: *mut c_void,
+) -> c_int {
+    if caller_ptr.is_null()
+        || linker_ptr.is_null()
+        || global_ptr.is_null()
+        || module_name.is_null()
+        || name.is_null()
+    {
+        return -1;
+    }
+    let module_name_str = match unsafe { std::ffi::CStr::from_ptr(module_name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return -1,
+    };
+    let name_str = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return -1,
+    };
+
+    ffi_utils::ffi_try_code(|| {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        let linker = unsafe {
+            crate::linker::core::get_linker_ref(linker_ptr as *const c_void)?
+        };
+        let global =
+            unsafe { crate::global::core::get_global_ref(global_ptr as *const c_void)? };
+
+        let wasmtime_global_arc = global.wasmtime_global();
+        let wasmtime_global_lock =
+            wasmtime_global_arc
+                .lock()
+                .map_err(|e| crate::error::WasmtimeError::Concurrency {
+                    message: format!("Failed to lock global: {}", e),
+                })?;
+
+        let mut linker_lock = linker.inner()?;
+        linker_lock
+            .define(
+                &mut caller.as_context_mut(),
+                &module_name_str,
+                &name_str,
+                wasmtime::Extern::Global(*wasmtime_global_lock),
+            )
+            .map_err(|e| crate::error::WasmtimeError::Linker {
+                message: format!(
+                    "Caller-scoped Linker.defineGlobal '{}::{}' failed: {}",
+                    module_name_str, name_str, e
+                ),
+            })?;
+        Ok(())
+    })
+}
