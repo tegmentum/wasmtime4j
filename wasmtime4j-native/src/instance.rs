@@ -1409,6 +1409,133 @@ impl Instance {
         Ok(exports)
     }
 
+    // ===========================================================================
+    // F-Wasmtime4j-Caller-Scoped-Store-Reentrancy r.2 slice 4 (2026-07-27).
+    //
+    // Callback-safe sibling accessors — take a wasmtime StoreContextMut borrowed
+    // from an active host callback frame directly, bypassing Store::try_lock_store
+    // which re-acquires the store's ReentrantLock and deadlocks / SIGSEGVs from
+    // a callback frame per doctrine-store-reentrant-lock-blocks-in-callback-
+    // 2026-07-27.
+    //
+    // The Instance's own inner lock is a ReentrantLock<WasmtimeInstance>, so
+    // nested acquisition from a callback frame is safe — only the Store's
+    // lock is the reentrancy hazard.
+    // ===========================================================================
+
+    /// Callback-safe counterpart to [`Instance::get_func`].
+    pub fn get_func_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+        name: &str,
+    ) -> WasmtimeResult<Option<Func>> {
+        let instance = self.inner.lock();
+        match instance.get_export(&mut *ctx, name) {
+            Some(Extern::Func(func)) => Ok(Some(func)),
+            _ => Ok(None),
+        }
+    }
+
+    /// Callback-safe counterpart to [`Instance::get_func_cached`]. Populates
+    /// the same shared cache as the outer variant, so a cache-hit path is
+    /// available from either the outer store or a callback frame after the
+    /// first resolution.
+    pub fn get_func_cached_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+        name: &str,
+    ) -> WasmtimeResult<Option<Func>> {
+        if let Ok(cache) = self.func_cache.lock() {
+            if let Some(func) = cache.get(name) {
+                return Ok(Some(*func));
+            }
+        }
+        let func = self.get_func_with_context(ctx, name)?;
+        if let Some(f) = func {
+            if let Ok(mut cache) = self.func_cache.lock() {
+                cache.insert(name.to_string(), f);
+            }
+            Ok(Some(f))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Callback-safe counterpart to [`Instance::get_global`].
+    pub fn get_global_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+        name: &str,
+    ) -> WasmtimeResult<Option<Global>> {
+        let instance = self.inner.lock();
+        match instance.get_export(&mut *ctx, name) {
+            Some(Extern::Global(global)) => Ok(Some(global)),
+            _ => Ok(None),
+        }
+    }
+
+    /// Callback-safe counterpart to [`Instance::get_memory`].
+    pub fn get_memory_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+        name: &str,
+    ) -> WasmtimeResult<Option<Memory>> {
+        let instance = self.inner.lock();
+        match instance.get_export(&mut *ctx, name) {
+            Some(Extern::Memory(memory)) => Ok(Some(memory)),
+            _ => Ok(None),
+        }
+    }
+
+    /// Callback-safe counterpart to [`Instance::get_table`].
+    pub fn get_table_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+        name: &str,
+    ) -> WasmtimeResult<Option<Table>> {
+        let instance = self.inner.lock();
+        match instance.get_export(&mut *ctx, name) {
+            Some(Extern::Table(table)) => Ok(Some(table)),
+            _ => Ok(None),
+        }
+    }
+
+    /// Callback-safe counterpart to [`Instance::get_tag`].
+    pub fn get_tag_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+        name: &str,
+    ) -> WasmtimeResult<Option<Tag>> {
+        let instance = self.inner.lock();
+        match instance.get_export(&mut *ctx, name) {
+            Some(Extern::Tag(tag)) => Ok(Some(tag)),
+            _ => Ok(None),
+        }
+    }
+
+    /// Callback-safe counterpart to [`Instance::debug_tag`].
+    pub fn debug_tag_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+        tag_index: u32,
+    ) -> WasmtimeResult<Option<Tag>> {
+        let instance = self.inner.lock();
+        Ok(instance.debug_tag(&mut *ctx, tag_index))
+    }
+
+    /// Callback-safe counterpart to [`Instance::exports`].
+    pub fn exports_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+    ) -> WasmtimeResult<Vec<String>> {
+        let instance = self.inner.lock();
+        let exports = instance
+            .exports(&mut *ctx)
+            .map(|export| export.name().to_string())
+            .collect();
+        Ok(exports)
+    }
+
     /// Dispose instance and clean up resources
     pub fn dispose(&mut self) -> WasmtimeResult<()> {
         // Mark as disposed to prevent further operations
