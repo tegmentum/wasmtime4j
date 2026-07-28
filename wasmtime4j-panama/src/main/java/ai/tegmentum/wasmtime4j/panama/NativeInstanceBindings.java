@@ -1343,6 +1343,108 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   // =============================================================================
+  // F-Wasmtime4j-Panama-Consumer-Gated-Followups r.2 (2026-07-28)
+  //
+  // 3 caller-scoped FFI additions that close the last "consumer-gated" gaps
+  // documented by the predecessor charters:
+  //   1. callerFuncToRegistryId — non-null funcref support for growTable /
+  //      setTableElement (removes PanamaCaller.resolveRefIdForMutation's UOE
+  //      branch for WasmFunction values).
+  //   2. callerLinkerDefineMemoryFromExport — parity with JNI's
+  //      nativeCallerLinkerDefineMemoryFromExport at
+  //      wasmtime4j-native/src/jni/caller.rs:860.
+  //   3. callerLinkerDefineTableFromExport — parity with JNI's
+  //      nativeCallerLinkerDefineTableFromExport at
+  //      wasmtime4j-native/src/jni/caller.rs:920.
+  // =============================================================================
+
+  /**
+   * Register a caller-scoped function as a funcref in REFERENCE_REGISTRY under
+   * the caller's store_id, returning the registry id used by
+   * {@link #callerGrowTable} and {@link #callerSetTableElement} for non-null
+   * funcref initialization / write.
+   *
+   * <p>Returns 0 on null args (registry-id 0 == null funcref sentinel).
+   * Positive return values are the registry id assigned by the caller-scoped
+   * REFERENCE_REGISTRY.
+   *
+   * @return registry id (positive) on success, 0 on null args
+   * @see <a href="file://~/git/wasmos/wit/table.wit">wasmos wit://table.wit</a>
+   *     — mirrors {@code host:wasmtime@0.10.0/table.table.grow} init-arg
+   *     resolution shape.
+   * @since 1.5.3
+   */
+  public long callerFuncToRegistryId(
+      final MemorySegment callerPtr, final MemorySegment functionPtr) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(functionPtr, "functionPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_func_to_registry_id", Long.class, callerPtr, functionPtr);
+  }
+
+  /**
+   * Define a memory extern into a Linker by looking it up on the caller by
+   * export name — avoids the api-layer registry-handle roundtrip.
+   *
+   * @return 0 on success, non-zero error code on failure
+   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a>
+   *     — mirror of {@code host:wasmtime@0.10.0/linker.linker.define-memory}
+   *     with an export-name lookup shortcut.
+   * @since 1.5.3
+   */
+  public int callerLinkerDefineMemoryFromExport(
+      final MemorySegment callerPtr,
+      final MemorySegment linkerPtr,
+      final MemorySegment moduleName,
+      final MemorySegment name,
+      final MemorySegment callerExportName) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(moduleName, "moduleName");
+    validatePointer(name, "name");
+    validatePointer(callerExportName, "callerExportName");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_linker_define_memory_from_export",
+        Integer.class,
+        callerPtr,
+        linkerPtr,
+        moduleName,
+        name,
+        callerExportName);
+  }
+
+  /**
+   * Define a table extern into a Linker by looking it up on the caller by
+   * export name — avoids the api-layer registry-handle roundtrip.
+   *
+   * @return 0 on success, non-zero error code on failure
+   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a>
+   *     — mirror of {@code host:wasmtime@0.10.0/linker.linker.define-table}
+   *     with an export-name lookup shortcut.
+   * @since 1.5.3
+   */
+  public int callerLinkerDefineTableFromExport(
+      final MemorySegment callerPtr,
+      final MemorySegment linkerPtr,
+      final MemorySegment moduleName,
+      final MemorySegment name,
+      final MemorySegment callerExportName) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(moduleName, "moduleName");
+    validatePointer(name, "name");
+    validatePointer(callerExportName, "callerExportName");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_linker_define_table_from_export",
+        Integer.class,
+        callerPtr,
+        linkerPtr,
+        moduleName,
+        name,
+        callerExportName);
+  }
+
+  // =============================================================================
   // Panama Function FFI Operations
   // =============================================================================
 
@@ -2618,6 +2720,39 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // module_name
             ValueLayout.ADDRESS, // name
             ValueLayout.ADDRESS)); // global_ptr
+
+    // F-Wasmtime4j-Panama-Consumer-Gated-Followups r.2 (2026-07-28).
+    // 3 new FFI descriptors: FuncToRegistryId + LinkerDefine{Memory,Table}
+    // FromExport. All parity with JNI-tier natives at
+    // wasmtime4j-native/src/jni/caller.rs (nativeCallerFuncToRegistryId +
+    // nativeCallerLinkerDefine{Memory,Table}FromExport).
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_func_to_registry_id",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS, // caller_ptr
+            ValueLayout.ADDRESS)); // function_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_linker_define_memory_from_export",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // caller_ptr
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // module_name (c_char*)
+            ValueLayout.ADDRESS, // name (c_char*)
+            ValueLayout.ADDRESS)); // caller_export_name (c_char*)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_linker_define_table_from_export",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // caller_ptr
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // module_name (c_char*)
+            ValueLayout.ADDRESS, // name (c_char*)
+            ValueLayout.ADDRESS)); // caller_export_name (c_char*)
   }
 
   private void initializeFunctionBindings() {

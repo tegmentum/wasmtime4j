@@ -122,6 +122,70 @@ final class PanamaCallerMutationContractTest {
         "linkerDefineGlobal", Linker.class, String.class, String.class, WasmGlobal.class);
   }
 
+  // ---------------------------------------------------------------------------
+  // F-Wasmtime4j-Panama-Consumer-Gated-Followups r.3 + r.4 (2026-07-28) — 3
+  // additional overrides that closed the last inherited-UOE gaps: FromExport
+  // pair + compileModule.
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void linker_define_memory_from_export_is_real_override() throws NoSuchMethodException {
+    assertRealOverride(
+        "linkerDefineMemoryFromExport",
+        Linker.class,
+        String.class,
+        String.class,
+        String.class);
+  }
+
+  @Test
+  void linker_define_table_from_export_is_real_override() throws NoSuchMethodException {
+    assertRealOverride(
+        "linkerDefineTableFromExport",
+        Linker.class,
+        String.class,
+        String.class,
+        String.class);
+  }
+
+  @Test
+  void compile_module_is_real_override() throws NoSuchMethodException {
+    assertRealOverride("compileModule", byte[].class);
+  }
+
+  @Test
+  void compile_module_returns_module() throws NoSuchMethodException {
+    // Panama's compileModule must return ai.tegmentum.wasmtime4j.Module (the
+    // public api-level type), parity with JniCaller.compileModule shape.
+    final Method impl = panamaOverride("compileModule", byte[].class);
+    assertEquals(ai.tegmentum.wasmtime4j.Module.class, impl.getReturnType());
+  }
+
+  @Test
+  void followup_overrides_throw_wasm_exception() throws NoSuchMethodException {
+    // Each of the 3 new overrides declares throws WasmException at the
+    // interface level. Sanity-check the impl signature keeps it — same
+    // pattern as all_overrides_throw_wasm_exception for the r.3 slice.
+    for (final Method m : PanamaCaller.class.getDeclaredMethods()) {
+      final String name = m.getName();
+      if (name.equals("linkerDefineMemoryFromExport")
+          || name.equals("linkerDefineTableFromExport")
+          || name.equals("compileModule")) {
+        boolean declaresWasmException = false;
+        for (final Class<?> t : m.getExceptionTypes()) {
+          if (WasmException.class.isAssignableFrom(t)) {
+            declaresWasmException = true;
+            break;
+          }
+        }
+        if (!declaresWasmException) {
+          throw new AssertionError(
+              name + " on PanamaCaller must declare throws WasmException");
+        }
+      }
+    }
+  }
+
   @Test
   void all_overrides_throw_wasm_exception() throws NoSuchMethodException {
     // Each of the 9 overrides declares throws WasmException at the interface
@@ -165,20 +229,23 @@ final class PanamaCallerMutationContractTest {
   }
 
   @Test
-  void resolve_ref_id_helper_is_private_static() throws NoSuchMethodException {
-    // Sanity: the charter-scope-exclusion helper is not part of the public
-    // surface. Consumers see the exception behavior via the mutation methods,
-    // not this helper directly.
+  void resolve_ref_id_helper_is_private_instance_method() throws NoSuchMethodException {
+    // F-Wasmtime4j-Panama-Consumer-Gated-Followups r.2 (2026-07-28) —
+    // resolveRefIdForMutation was flipped from static to instance so it can
+    // reach `bindings` + `callerPtr` for non-null WasmFunction dispatch. It
+    // remains private and off the public surface; consumers see behavior via
+    // growTable / setTableElement, not the helper directly.
     final Method helper =
         PanamaCaller.class.getDeclaredMethod("resolveRefIdForMutation", Object.class, String.class);
     assertNotNull(helper);
     assertEquals(long.class, helper.getReturnType());
-    // Must be private + static.
     if (!Modifier.isPrivate(helper.getModifiers())) {
       throw new AssertionError("resolveRefIdForMutation must be private");
     }
-    if (!Modifier.isStatic(helper.getModifiers())) {
-      throw new AssertionError("resolveRefIdForMutation must be static");
+    if (Modifier.isStatic(helper.getModifiers())) {
+      throw new AssertionError(
+          "resolveRefIdForMutation must NOT be static after r.2 — it needs "
+              + "`bindings` and `callerPtr` to register non-null funcref");
     }
   }
 

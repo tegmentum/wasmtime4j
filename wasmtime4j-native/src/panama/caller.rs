@@ -831,6 +831,206 @@ pub extern "C" fn wasmtime4j_panama_caller_linker_define_global(
 }
 
 // ===========================================================================
+// F-Wasmtime4j-Panama-Consumer-Gated-Followups r.2 (2026-07-28).
+//
+// FuncToRegistryId FFI parity with JNI's `nativeCallerFuncToRegistryId`
+// (see `wasmtime4j-native/src/jni/caller.rs:705-724`). Unblocks non-null
+// funcref for `wasmtime4j_panama_caller_grow_table` and
+// `wasmtime4j_panama_caller_set_table_element` — previously
+// `PanamaCaller.resolveRefIdForMutation` threw UnsupportedOperationException
+// for non-null `init`/`value`.
+//
+// Body mirrors JNI verbatim (same FunctionHandle → Func extraction, same
+// `crate::table::core::register_function_reference` registration under
+// `caller.data().store_id`).
+// ===========================================================================
+
+/// Register a caller-scoped function as a funcref in REFERENCE_REGISTRY under
+/// the caller's store_id, returning the registry id used by
+/// `wasmtime4j_panama_caller_grow_table` and
+/// `wasmtime4j_panama_caller_set_table_element`.
+///
+/// Returns 0 on null-arg (null → registry-id 0 == null funcref sentinel).
+/// Returns positive registry id on success.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_func_to_registry_id(
+    caller_ptr: *mut c_void,
+    function_ptr: *mut c_void,
+) -> i64 {
+    if caller_ptr.is_null() || function_ptr.is_null() {
+        return 0;
+    }
+    ffi_utils::ffi_try_code_i64(|| {
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        let store_id = caller.data().store_id;
+        let func_handle =
+            unsafe { &*(function_ptr as *const crate::jni::function::FunctionHandle) };
+        let func = func_handle.get_func().clone();
+        let id = crate::table::core::register_function_reference(func, store_id)?;
+        Ok(id as i64)
+    })
+}
+
+/// Define a memory extern into a Linker by looking it up on the caller by
+/// export name. Mirrors JNI's `nativeCallerLinkerDefineMemoryFromExport`
+/// (`wasmtime4j-native/src/jni/caller.rs:860`). Preferable to
+/// `wasmtime4j_panama_caller_linker_define_memory` when the source memory is
+/// the caller's own export — avoids the api-layer registry-handle roundtrip.
+///
+/// Returns 0 on success, non-zero on failure. Error retrievable via
+/// last-error FFI.
+///
+/// Safety: `module_name`, `name`, and `caller_export_name` must be valid
+/// nul-terminated C strings.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_linker_define_memory_from_export(
+    caller_ptr: *mut c_void,
+    linker_ptr: *mut c_void,
+    module_name: *const c_char,
+    name: *const c_char,
+    caller_export_name: *const c_char,
+) -> c_int {
+    if caller_ptr.is_null()
+        || linker_ptr.is_null()
+        || module_name.is_null()
+        || name.is_null()
+        || caller_export_name.is_null()
+    {
+        return -1;
+    }
+    let module_name_str = match unsafe { std::ffi::CStr::from_ptr(module_name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return -1,
+    };
+    let name_str = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return -1,
+    };
+    let export_name_str =
+        match unsafe { std::ffi::CStr::from_ptr(caller_export_name) }.to_str() {
+            Ok(s) => s.to_string(),
+            Err(_) => return -1,
+        };
+
+    ffi_utils::ffi_try_code(|| {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        let linker = unsafe {
+            crate::linker::core::get_linker_ref(linker_ptr as *const c_void)?
+        };
+
+        let export = caller
+            .get_export(&export_name_str)
+            .ok_or_else(|| crate::error::WasmtimeError::Linker {
+                message: format!("caller has no export named '{}'", export_name_str),
+            })?;
+        let memory = export.into_memory().ok_or_else(|| {
+            crate::error::WasmtimeError::Linker {
+                message: format!(
+                    "caller export '{}' is not a memory",
+                    export_name_str
+                ),
+            }
+        })?;
+
+        let mut linker_lock = linker.inner()?;
+        linker_lock
+            .define(
+                &mut caller.as_context_mut(),
+                &module_name_str,
+                &name_str,
+                wasmtime::Extern::Memory(memory),
+            )
+            .map_err(|e| crate::error::WasmtimeError::Linker {
+                message: format!(
+                    "Caller-scoped Linker.defineMemoryFromExport '{}::{}' (from '{}') failed: {}",
+                    module_name_str, name_str, export_name_str, e
+                ),
+            })?;
+        Ok(())
+    })
+}
+
+/// Define a table extern into a Linker by looking it up on the caller by
+/// export name. Mirrors JNI's `nativeCallerLinkerDefineTableFromExport`
+/// (`wasmtime4j-native/src/jni/caller.rs:920`). See
+/// `wasmtime4j_panama_caller_linker_define_memory_from_export` for shape;
+/// this is the parallel entry for tables.
+///
+/// Safety: `module_name`, `name`, and `caller_export_name` must be valid
+/// nul-terminated C strings.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_linker_define_table_from_export(
+    caller_ptr: *mut c_void,
+    linker_ptr: *mut c_void,
+    module_name: *const c_char,
+    name: *const c_char,
+    caller_export_name: *const c_char,
+) -> c_int {
+    if caller_ptr.is_null()
+        || linker_ptr.is_null()
+        || module_name.is_null()
+        || name.is_null()
+        || caller_export_name.is_null()
+    {
+        return -1;
+    }
+    let module_name_str = match unsafe { std::ffi::CStr::from_ptr(module_name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return -1,
+    };
+    let name_str = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return -1,
+    };
+    let export_name_str =
+        match unsafe { std::ffi::CStr::from_ptr(caller_export_name) }.to_str() {
+            Ok(s) => s.to_string(),
+            Err(_) => return -1,
+        };
+
+    ffi_utils::ffi_try_code(|| {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        let linker = unsafe {
+            crate::linker::core::get_linker_ref(linker_ptr as *const c_void)?
+        };
+
+        let export = caller
+            .get_export(&export_name_str)
+            .ok_or_else(|| crate::error::WasmtimeError::Linker {
+                message: format!("caller has no export named '{}'", export_name_str),
+            })?;
+        let table = export.into_table().ok_or_else(|| {
+            crate::error::WasmtimeError::Linker {
+                message: format!(
+                    "caller export '{}' is not a table",
+                    export_name_str
+                ),
+            }
+        })?;
+
+        let mut linker_lock = linker.inner()?;
+        linker_lock
+            .define(
+                &mut caller.as_context_mut(),
+                &module_name_str,
+                &name_str,
+                wasmtime::Extern::Table(table),
+            )
+            .map_err(|e| crate::error::WasmtimeError::Linker {
+                message: format!(
+                    "Caller-scoped Linker.defineTableFromExport '{}::{}' (from '{}') failed: {}",
+                    module_name_str, name_str, export_name_str, e
+                ),
+            })?;
+        Ok(())
+    })
+}
+
+// ===========================================================================
 // F-Wasmtime4j-Panama-Caller-Scoped-Mutation-FFI r.5 slice 4 (2026-07-28).
 //
 // FFI unit tests. One null-arg rejection test per new entry proves the entry
@@ -988,6 +1188,86 @@ mod caller_scoped_mutation_null_arg_tests {
             module.as_ptr(),
             name.as_ptr(),
             ptr::null_mut(),
+        );
+        assert_eq!(ret, -1);
+    }
+
+    // --- F-Wasmtime4j-Panama-Consumer-Gated-Followups r.2 (2026-07-28) ---
+
+    #[test]
+    fn func_to_registry_id_null_caller_returns_zero() {
+        // Convention: null args → 0 (registry-id 0 == null funcref sentinel).
+        // Distinguishes from -1 error sentinel used by mutation FFIs.
+        let ret = wasmtime4j_panama_caller_func_to_registry_id(
+            ptr::null_mut(),
+            0x1 as *mut c_void,
+        );
+        assert_eq!(ret, 0);
+    }
+
+    #[test]
+    fn func_to_registry_id_null_function_returns_zero() {
+        let ret = wasmtime4j_panama_caller_func_to_registry_id(
+            0x1 as *mut c_void,
+            ptr::null_mut(),
+        );
+        assert_eq!(ret, 0);
+    }
+
+    #[test]
+    fn linker_define_memory_from_export_null_caller_returns_neg_one() {
+        let module = std::ffi::CString::new("env").unwrap();
+        let name = std::ffi::CString::new("mem").unwrap();
+        let export = std::ffi::CString::new("memory").unwrap();
+        let ret = wasmtime4j_panama_caller_linker_define_memory_from_export(
+            ptr::null_mut(),
+            0x1 as *mut c_void,
+            module.as_ptr(),
+            name.as_ptr(),
+            export.as_ptr(),
+        );
+        assert_eq!(ret, -1);
+    }
+
+    #[test]
+    fn linker_define_memory_from_export_null_export_name_returns_neg_one() {
+        let module = std::ffi::CString::new("env").unwrap();
+        let name = std::ffi::CString::new("mem").unwrap();
+        let ret = wasmtime4j_panama_caller_linker_define_memory_from_export(
+            0x1 as *mut c_void,
+            0x1 as *mut c_void,
+            module.as_ptr(),
+            name.as_ptr(),
+            ptr::null(),
+        );
+        assert_eq!(ret, -1);
+    }
+
+    #[test]
+    fn linker_define_table_from_export_null_caller_returns_neg_one() {
+        let module = std::ffi::CString::new("env").unwrap();
+        let name = std::ffi::CString::new("tbl").unwrap();
+        let export = std::ffi::CString::new("__indirect_function_table").unwrap();
+        let ret = wasmtime4j_panama_caller_linker_define_table_from_export(
+            ptr::null_mut(),
+            0x1 as *mut c_void,
+            module.as_ptr(),
+            name.as_ptr(),
+            export.as_ptr(),
+        );
+        assert_eq!(ret, -1);
+    }
+
+    #[test]
+    fn linker_define_table_from_export_null_export_name_returns_neg_one() {
+        let module = std::ffi::CString::new("env").unwrap();
+        let name = std::ffi::CString::new("tbl").unwrap();
+        let ret = wasmtime4j_panama_caller_linker_define_table_from_export(
+            0x1 as *mut c_void,
+            0x1 as *mut c_void,
+            module.as_ptr(),
+            name.as_ptr(),
+            ptr::null(),
         );
         assert_eq!(ret, -1);
     }

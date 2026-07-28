@@ -659,6 +659,100 @@ final class PanamaCaller<T> implements Caller<T> {
     }
   }
 
+  // ===========================================================================
+  // F-Wasmtime4j-Panama-Consumer-Gated-Followups r.3 + r.4 (2026-07-28).
+  //
+  // Overrides the remaining 3 Caller<T> mutation methods that inherited UOE
+  // defaults after the predecessor mutation-java-bindings charter:
+  //   - linkerDefineMemoryFromExport (r.3)
+  //   - linkerDefineTableFromExport  (r.3)
+  //   - compileModule                (r.4)
+  //
+  // Behaviour is parity with JniCaller (JNI-tier reference at
+  // wasmtime4j-jni/src/main/java/ai/tegmentum/wasmtime4j/jni/JniCaller.java:469,
+  // :833, :873).
+  // ===========================================================================
+
+  @Override
+  public ai.tegmentum.wasmtime4j.Module compileModule(final byte[] wasmBytes)
+      throws WasmException {
+    if (wasmBytes == null) {
+      throw new IllegalArgumentException("wasmBytes cannot be null");
+    }
+    // Engine-scoped compilation. Panama already has PanamaEngine.compileModule
+    // at PanamaEngine.java:215; delegate through the caller's store's engine
+    // so the resulting Module is definitely-compatible with the caller's store.
+    // Parity with JniCaller.compileModule (JniCaller.java:469-478).
+    final Engine engine = store.getEngine();
+    return engine.compileModule(wasmBytes);
+  }
+
+  @Override
+  public void linkerDefineMemoryFromExport(
+      final ai.tegmentum.wasmtime4j.Linker<?> linker,
+      final String moduleName,
+      final String name,
+      final String callerExportName)
+      throws WasmException {
+    validateLinkerDefineArgs(
+        linker, moduleName, name, callerExportName, "linkerDefineMemoryFromExport");
+    final MemorySegment linkerPtr = extractPanamaLinker(linker).getNativeLinker();
+    try (final Arena arena = Arena.ofConfined()) {
+      final int rc =
+          bindings.callerLinkerDefineMemoryFromExport(
+              callerPtr,
+              linkerPtr,
+              arena.allocateFrom(moduleName),
+              arena.allocateFrom(name),
+              arena.allocateFrom(callerExportName));
+      if (rc != 0) {
+        throw new WasmException(
+            "PanamaCaller.linkerDefineMemoryFromExport '"
+                + moduleName
+                + "::"
+                + name
+                + "' (from caller export '"
+                + callerExportName
+                + "') failed (native returned "
+                + rc
+                + ")");
+      }
+    }
+  }
+
+  @Override
+  public void linkerDefineTableFromExport(
+      final ai.tegmentum.wasmtime4j.Linker<?> linker,
+      final String moduleName,
+      final String name,
+      final String callerExportName)
+      throws WasmException {
+    validateLinkerDefineArgs(
+        linker, moduleName, name, callerExportName, "linkerDefineTableFromExport");
+    final MemorySegment linkerPtr = extractPanamaLinker(linker).getNativeLinker();
+    try (final Arena arena = Arena.ofConfined()) {
+      final int rc =
+          bindings.callerLinkerDefineTableFromExport(
+              callerPtr,
+              linkerPtr,
+              arena.allocateFrom(moduleName),
+              arena.allocateFrom(name),
+              arena.allocateFrom(callerExportName));
+      if (rc != 0) {
+        throw new WasmException(
+            "PanamaCaller.linkerDefineTableFromExport '"
+                + moduleName
+                + "::"
+                + name
+                + "' (from caller export '"
+                + callerExportName
+                + "') failed (native returned "
+                + rc
+                + ")");
+      }
+    }
+  }
+
   // --- helpers ---
 
   private static PanamaTable extractPanamaTable(final ai.tegmentum.wasmtime4j.WasmTable table) {
@@ -716,25 +810,57 @@ final class PanamaCaller<T> implements Caller<T> {
 
   /**
    * Resolve a mutation-op {@code init}/{@code value} argument to a funcref
-   * registry id. Only {@code null} is supported at charter r.3 scope
-   * (registry-id 0). Non-null funcref requires the {@code FuncToRegistryId}
-   * FFI which is out-of-scope for Panama's cleaner call surface (see charter
-   * §Out-of-scope in
-   * {@code f-wasmtime4j-panama-caller-scoped-mutation-ffi-charter-2026-07-28.md}).
+   * registry id.
+   *
+   * <p>Supported values (F-Wasmtime4j-Panama-Consumer-Gated-Followups r.2,
+   * 2026-07-28):
+   * <ul>
+   *   <li>{@code null} → registry id 0 (null funcref sentinel).
+   *   <li>{@link PanamaCallerFunction} — extracts its {@code funcHandle}
+   *       {@link MemorySegment} and registers via
+   *       {@link NativeInstanceBindings#callerFuncToRegistryId}.
+   *   <li>{@link PanamaHostFunction} — extracts its
+   *       {@link PanamaHostFunction#getFunctionHandle} and registers via
+   *       the same path.
+   * </ul>
+   *
+   * <p>Other {@link WasmFunction} implementations (including {@link PanamaFunction}
+   * which does not hold a direct native handle — it dispatches by name through
+   * an instance) still throw {@link IllegalArgumentException}. Consumers wanting
+   * to pass a name-dispatch {@link PanamaFunction} should first materialize it
+   * through a {@link PanamaHostFunction} export lookup, mirroring how JNI
+   * consumers pass {@code JniFunction}.
    */
-  private static long resolveRefIdForMutation(final Object value, final String opName) {
+  private long resolveRefIdForMutation(final Object value, final String opName)
+      throws WasmException {
     if (value == null) {
       return 0L;
     }
-    throw new UnsupportedOperationException(
-        "PanamaCaller."
-            + opName
-            + ": non-null init/value not supported at Panama tier. "
-            + "Only null (registry-id 0) is accepted. Non-null funcref requires "
-            + "FuncToRegistryId FFI which is out-of-scope per charter "
-            + "f-wasmtime4j-panama-caller-scoped-mutation-ffi-charter-2026-07-28. "
-            + "Passed value type: "
-            + value.getClass().getName());
+    final MemorySegment funcPtr;
+    if (value instanceof PanamaCallerFunction pcf) {
+      funcPtr = pcf.getFuncHandle();
+    } else if (value instanceof PanamaHostFunction phf) {
+      funcPtr = phf.getFunctionHandle();
+    } else {
+      throw new IllegalArgumentException(
+          "PanamaCaller."
+              + opName
+              + ": non-null init/value must be a PanamaCallerFunction or "
+              + "PanamaHostFunction. PanamaFunction (name-dispatch) has no "
+              + "direct native handle — materialize it via a caller export lookup "
+              + "first. Passed value type: "
+              + value.getClass().getName());
+    }
+    if (funcPtr == null || funcPtr.equals(MemorySegment.NULL) || funcPtr.address() == 0) {
+      throw new WasmException(
+          "PanamaCaller." + opName + ": function handle is null or zero");
+    }
+    final long id = bindings.callerFuncToRegistryId(callerPtr, funcPtr);
+    if (id == 0L) {
+      throw new WasmException(
+          "PanamaCaller." + opName + ": could not register function into REFERENCE_REGISTRY");
+    }
+    return id;
   }
 
   @Override
