@@ -422,3 +422,161 @@ pub extern "C" fn wasmtime4j_panama_caller_set_table_element(
         Ok(())
     })
 }
+
+// ===========================================================================
+// F-Wasmtime4j-Panama-Caller-Scoped-Mutation-FFI r.3 slice 2 (2026-07-28).
+//
+// Memory mutation FFI parity with JNI's `nativeCallerGrowMemory` +
+// `nativeCallerReadMemory` + `nativeCallerWriteMemory`. Bodies mirror the JNI
+// natives; Panama diverges on the byte-buffer convention:
+//   - read: caller pre-allocates `out_buf` of size `length`; native fills.
+//     (JNI returns a fresh jbyteArray Java-side; Panama has no allocator.)
+//   - write: caller passes `bytes` + `len` directly.
+//     (JNI reads a jbyteArray via env.convert_byte_array.)
+// ===========================================================================
+
+/// Grow a caller-visible Memory by `delta_pages`.
+///
+/// Returns the previous memory size in pages on success, or `-1` on failure
+/// (error stored via `set_last_error`).
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_grow_memory(
+    caller_ptr: *mut c_void,
+    memory_ptr: *mut c_void,
+    delta_pages: i64,
+) -> i64 {
+    if caller_ptr.is_null() || memory_ptr.is_null() {
+        return -1;
+    }
+    ffi_utils::ffi_try_code_i64(|| {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        let memory = unsafe { *(memory_ptr as *const wasmtime::Memory) };
+
+        let prev_pages = memory
+            .grow(&mut caller.as_context_mut(), delta_pages as u64)
+            .map_err(|e| crate::error::WasmtimeError::Memory {
+                message: format!("Caller-scoped memory grow failed: {}", e),
+            })?;
+        Ok(prev_pages as i64)
+    })
+}
+
+/// Read `length` bytes from the caller's exported memory named `name`,
+/// starting at `offset`, into the caller-provided buffer `out_buf`.
+///
+/// Uses the callback-safe `caller.get_export(&name).into_memory()` path
+/// (same as JNI's readMemory, avoiding the api-layer memory adapter's
+/// frame-scoped handle limitations).
+///
+/// Returns 0 on success, non-zero error code on failure. Caller MUST ensure
+/// `out_buf` points to at least `length` writable bytes.
+///
+/// Safety: `out_buf` must be a valid `*mut u8` pointing to `length` writable
+/// bytes; `name` must be a valid nul-terminated C string.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_read_memory(
+    caller_ptr: *mut c_void,
+    name: *const c_char,
+    offset: i64,
+    length: c_int,
+    out_buf: *mut u8,
+) -> c_int {
+    if caller_ptr.is_null() || name.is_null() || out_buf.is_null() {
+        return -1;
+    }
+    if length < 0 {
+        return -1;
+    }
+    let name_str = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return -1,
+    };
+    ffi_utils::ffi_try_code(|| {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        let export = caller
+            .get_export(&name_str)
+            .ok_or_else(|| crate::error::WasmtimeError::Runtime {
+                message: format!("caller has no exported memory named '{}'", name_str),
+                backtrace: None,
+            })?;
+        let memory = export
+            .into_memory()
+            .ok_or_else(|| crate::error::WasmtimeError::Runtime {
+                message: format!("caller export '{}' is not a memory", name_str),
+                backtrace: None,
+            })?;
+
+        // Read directly into the caller's buffer — no intermediate Vec<u8> like
+        // JNI needs (JNI has to allocate a jbyteArray return anyway).
+        let buf_slice = unsafe { std::slice::from_raw_parts_mut(out_buf, length as usize) };
+        memory
+            .read(&mut caller.as_context_mut(), offset as usize, buf_slice)
+            .map_err(|e| crate::error::WasmtimeError::Runtime {
+                message: format!("Caller-scoped memory read failed: {}", e),
+                backtrace: None,
+            })?;
+        Ok(())
+    })
+}
+
+/// Write `len` bytes from `bytes` into the caller's exported memory named
+/// `name` starting at `offset`.
+///
+/// Uses the callback-safe `caller.get_export(&name).into_memory()` path.
+///
+/// Returns 0 on success, non-zero error code on failure.
+///
+/// Safety: `bytes` must be a valid `*const u8` pointing to `len` readable
+/// bytes; `name` must be a valid nul-terminated C string.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_write_memory(
+    caller_ptr: *mut c_void,
+    name: *const c_char,
+    offset: i64,
+    bytes: *const u8,
+    len: c_int,
+) -> c_int {
+    if caller_ptr.is_null() || name.is_null() || bytes.is_null() {
+        return -1;
+    }
+    if len < 0 {
+        return -1;
+    }
+    let name_str = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return -1,
+    };
+    // Copy bytes into an owned Vec so the FFI-callee owns the data across the
+    // wasmtime::Memory::write boundary (bytes ptr lifetime is a caller
+    // guarantee only for this call).
+    let data: Vec<u8> = unsafe { std::slice::from_raw_parts(bytes, len as usize) }.to_vec();
+    ffi_utils::ffi_try_code(|| {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        let export = caller
+            .get_export(&name_str)
+            .ok_or_else(|| crate::error::WasmtimeError::Runtime {
+                message: format!("caller has no exported memory named '{}'", name_str),
+                backtrace: None,
+            })?;
+        let memory = export
+            .into_memory()
+            .ok_or_else(|| crate::error::WasmtimeError::Runtime {
+                message: format!("caller export '{}' is not a memory", name_str),
+                backtrace: None,
+            })?;
+
+        memory
+            .write(&mut caller.as_context_mut(), offset as usize, &data)
+            .map_err(|e| crate::error::WasmtimeError::Runtime {
+                message: format!("Caller-scoped memory write failed: {}", e),
+                backtrace: None,
+            })?;
+        Ok(())
+    })
+}
