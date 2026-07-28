@@ -829,3 +829,166 @@ pub extern "C" fn wasmtime4j_panama_caller_linker_define_global(
         Ok(())
     })
 }
+
+// ===========================================================================
+// F-Wasmtime4j-Panama-Caller-Scoped-Mutation-FFI r.5 slice 4 (2026-07-28).
+//
+// FFI unit tests. One null-arg rejection test per new entry proves the entry
+// is linkable + returns the -1 sentinel for null-pointer args without
+// segfaulting or panicking. This is the minimum viable coverage — a live
+// callback frame is required for positive-path testing, which happens at
+// integration scope in a Panama-consumer harness.
+// ===========================================================================
+
+#[cfg(test)]
+mod caller_scoped_mutation_null_arg_tests {
+    use super::*;
+    use std::ptr;
+
+    // --- r.2 slice 1: Table mutation ---
+
+    #[test]
+    fn grow_table_null_caller_returns_neg_one() {
+        let ret = wasmtime4j_panama_caller_grow_table(
+            ptr::null_mut(),
+            0x1 as *mut c_void, // non-null table pointer
+            1,
+            0,
+        );
+        assert_eq!(ret, -1);
+    }
+
+    #[test]
+    fn grow_table_null_table_returns_neg_one() {
+        let ret = wasmtime4j_panama_caller_grow_table(
+            0x1 as *mut c_void, // non-null caller
+            ptr::null_mut(),
+            1,
+            0,
+        );
+        assert_eq!(ret, -1);
+    }
+
+    #[test]
+    fn set_table_element_null_caller_returns_neg_one() {
+        let ret = wasmtime4j_panama_caller_set_table_element(
+            ptr::null_mut(),
+            0x1 as *mut c_void,
+            0,
+            0,
+        );
+        assert_eq!(ret, -1);
+    }
+
+    // --- r.3 slice 2: Memory mutation ---
+
+    #[test]
+    fn grow_memory_null_caller_returns_neg_one() {
+        let ret = wasmtime4j_panama_caller_grow_memory(ptr::null_mut(), 0x1 as *mut c_void, 1);
+        assert_eq!(ret, -1);
+    }
+
+    #[test]
+    fn read_memory_null_out_buf_returns_neg_one() {
+        let name = std::ffi::CString::new("memory").unwrap();
+        let ret = wasmtime4j_panama_caller_read_memory(
+            0x1 as *mut c_void, // non-null caller
+            name.as_ptr(),
+            0,
+            4,
+            ptr::null_mut(), // null out_buf triggers reject
+        );
+        assert_eq!(ret, -1);
+    }
+
+    #[test]
+    fn read_memory_negative_length_returns_neg_one() {
+        let name = std::ffi::CString::new("memory").unwrap();
+        let mut buf = [0u8; 4];
+        let ret = wasmtime4j_panama_caller_read_memory(
+            0x1 as *mut c_void,
+            name.as_ptr(),
+            0,
+            -1, // negative length rejected up-front
+            buf.as_mut_ptr(),
+        );
+        assert_eq!(ret, -1);
+    }
+
+    #[test]
+    fn write_memory_null_bytes_returns_neg_one() {
+        let name = std::ffi::CString::new("memory").unwrap();
+        let ret = wasmtime4j_panama_caller_write_memory(
+            0x1 as *mut c_void,
+            name.as_ptr(),
+            0,
+            ptr::null(),
+            0,
+        );
+        assert_eq!(ret, -1);
+    }
+
+    // --- r.4 slice 3: Instantiate + Linker define ---
+
+    #[test]
+    fn instantiate_null_out_returns_neg_one() {
+        let ret = wasmtime4j_panama_caller_instantiate(
+            0x1 as *mut c_void,
+            0x1 as *mut c_void,
+            ptr::null_mut(), // null out param — critical safety guard
+        );
+        assert_eq!(ret, -1);
+    }
+
+    #[test]
+    fn instantiate_null_caller_sets_out_null_and_returns_neg_one() {
+        let mut out: *mut c_void = 0x1 as *mut c_void; // start non-null to verify clear
+        let ret = wasmtime4j_panama_caller_instantiate(
+            ptr::null_mut(),
+            0x1 as *mut c_void,
+            &mut out as *mut *mut c_void,
+        );
+        assert_eq!(ret, -1);
+        assert!(out.is_null(), "instantiate should clear *out on failure");
+    }
+
+    #[test]
+    fn linker_define_memory_null_module_name_returns_neg_one() {
+        let name = std::ffi::CString::new("mem").unwrap();
+        let ret = wasmtime4j_panama_caller_linker_define_memory(
+            0x1 as *mut c_void,
+            0x1 as *mut c_void,
+            ptr::null(),
+            name.as_ptr(),
+            0x1 as *mut c_void,
+        );
+        assert_eq!(ret, -1);
+    }
+
+    #[test]
+    fn linker_define_table_null_name_returns_neg_one() {
+        let module = std::ffi::CString::new("env").unwrap();
+        let ret = wasmtime4j_panama_caller_linker_define_table(
+            0x1 as *mut c_void,
+            0x1 as *mut c_void,
+            module.as_ptr(),
+            ptr::null(),
+            0x1 as *mut c_void,
+        );
+        assert_eq!(ret, -1);
+    }
+
+    #[test]
+    fn linker_define_global_null_global_returns_neg_one() {
+        let module = std::ffi::CString::new("env").unwrap();
+        let name = std::ffi::CString::new("g").unwrap();
+        let ret = wasmtime4j_panama_caller_linker_define_global(
+            0x1 as *mut c_void,
+            0x1 as *mut c_void,
+            module.as_ptr(),
+            name.as_ptr(),
+            ptr::null_mut(),
+        );
+        assert_eq!(ret, -1);
+    }
+}
