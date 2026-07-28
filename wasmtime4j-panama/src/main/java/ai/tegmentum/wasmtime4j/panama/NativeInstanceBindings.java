@@ -1091,6 +1091,258 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   // =============================================================================
+  // F-Wasmtime4j-Panama-Caller-Scoped-Mutation-Java-Bindings r.2 slice 1
+  // (2026-07-28) — Java wrappers for the 9 caller-scoped mutation FFI entries
+  // added by F-Wasmtime4j-Panama-Caller-Scoped-Mutation-FFI (closed same day).
+  //
+  // Each wrapper mirrors its FFI signature 1:1. PanamaCaller (next slice)
+  // overrides the Caller<T> interface's `default` UOE methods to call
+  // these wrappers.
+  // =============================================================================
+
+  /**
+   * Grow a caller-visible Table by {@code delta} slots, initialized to
+   * {@code initRefId} (funcref/externref registry id, or 0 for null).
+   *
+   * @return previous table size on success, {@code -1} on failure
+   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a>
+   *     — mirror of {@code host:wasmtime@0.10.0/instance.wasm-table.grow}.
+   * @since 1.5.2
+   */
+  public long callerGrowTable(
+      final MemorySegment callerPtr,
+      final MemorySegment tablePtr,
+      final int delta,
+      final long initRefId) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(tablePtr, "tablePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_grow_table",
+        Long.class,
+        callerPtr,
+        tablePtr,
+        delta,
+        initRefId);
+  }
+
+  /**
+   * Set a caller-visible Table element at {@code index} to
+   * {@code valueRefId}.
+   *
+   * @return 0 on success, non-zero error code on failure
+   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a>
+   *     — mirror of {@code host:wasmtime@0.10.0/instance.wasm-table.set}.
+   * @since 1.5.2
+   */
+  public int callerSetTableElement(
+      final MemorySegment callerPtr,
+      final MemorySegment tablePtr,
+      final int index,
+      final long valueRefId) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(tablePtr, "tablePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_set_table_element",
+        Integer.class,
+        callerPtr,
+        tablePtr,
+        index,
+        valueRefId);
+  }
+
+  /**
+   * Grow a caller-visible Memory by {@code deltaPages}.
+   *
+   * @return previous size in pages on success, {@code -1} on failure
+   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a>
+   *     — mirror of {@code host:wasmtime@0.10.0/instance.wasm-memory.grow}.
+   * @since 1.5.2
+   */
+  public long callerGrowMemory(
+      final MemorySegment callerPtr, final MemorySegment memoryPtr, final long deltaPages) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(memoryPtr, "memoryPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_grow_memory",
+        Long.class,
+        callerPtr,
+        memoryPtr,
+        deltaPages);
+  }
+
+  /**
+   * Read {@code length} bytes from the caller's exported memory named
+   * {@code name}, starting at {@code offset}, into the caller-provided
+   * {@code outBuf}.
+   *
+   * @return 0 on success, non-zero error code on failure
+   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a>
+   *     — mirror of {@code host:wasmtime@0.10.0/instance.wasm-memory.read}.
+   * @since 1.5.2
+   */
+  public int callerReadMemory(
+      final MemorySegment callerPtr,
+      final MemorySegment name,
+      final long offset,
+      final int length,
+      final MemorySegment outBuf) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(name, "name");
+    validatePointer(outBuf, "outBuf");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_read_memory",
+        Integer.class,
+        callerPtr,
+        name,
+        offset,
+        length,
+        outBuf);
+  }
+
+  /**
+   * Write {@code len} bytes from {@code bytes} into the caller's exported
+   * memory named {@code name} starting at {@code offset}.
+   *
+   * @return 0 on success, non-zero error code on failure
+   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a>
+   *     — mirror of {@code host:wasmtime@0.10.0/instance.wasm-memory.write}.
+   * @since 1.5.2
+   */
+  public int callerWriteMemory(
+      final MemorySegment callerPtr,
+      final MemorySegment name,
+      final long offset,
+      final MemorySegment bytes,
+      final int len) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(name, "name");
+    validatePointer(bytes, "bytes");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_write_memory",
+        Integer.class,
+        callerPtr,
+        name,
+        offset,
+        bytes,
+        len);
+  }
+
+  /**
+   * Instantiate an {@code InstancePre} against the caller's live wasmtime
+   * context. Writes the resulting instance handle to {@code *instanceOut}.
+   *
+   * @return 0 on success, non-zero error code on failure
+   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a>
+   *     — mirror of {@code host:wasmtime@0.10.0/linker.linker.instantiate}
+   *     (Panama uses out-param for the instance handle vs. WIT's result).
+   * @since 1.5.2
+   */
+  public int callerInstantiate(
+      final MemorySegment callerPtr,
+      final MemorySegment instancePrePtr,
+      final MemorySegment instanceOut) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(instancePrePtr, "instancePrePtr");
+    validatePointer(instanceOut, "instanceOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_instantiate",
+        Integer.class,
+        callerPtr,
+        instancePrePtr,
+        instanceOut);
+  }
+
+  /**
+   * Define a memory extern into a Linker using the caller's live store
+   * context.
+   *
+   * @return 0 on success, non-zero error code on failure
+   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a>
+   *     — mirror of {@code host:wasmtime@0.10.0/linker.linker.define-memory}.
+   * @since 1.5.2
+   */
+  public int callerLinkerDefineMemory(
+      final MemorySegment callerPtr,
+      final MemorySegment linkerPtr,
+      final MemorySegment moduleName,
+      final MemorySegment name,
+      final MemorySegment memoryPtr) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(moduleName, "moduleName");
+    validatePointer(name, "name");
+    validatePointer(memoryPtr, "memoryPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_linker_define_memory",
+        Integer.class,
+        callerPtr,
+        linkerPtr,
+        moduleName,
+        name,
+        memoryPtr);
+  }
+
+  /**
+   * Define a table extern into a Linker using the caller's live store
+   * context.
+   *
+   * @return 0 on success, non-zero error code on failure
+   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a>
+   *     — mirror of {@code host:wasmtime@0.10.0/linker.linker.define-table}.
+   * @since 1.5.2
+   */
+  public int callerLinkerDefineTable(
+      final MemorySegment callerPtr,
+      final MemorySegment linkerPtr,
+      final MemorySegment moduleName,
+      final MemorySegment name,
+      final MemorySegment tablePtr) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(moduleName, "moduleName");
+    validatePointer(name, "name");
+    validatePointer(tablePtr, "tablePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_linker_define_table",
+        Integer.class,
+        callerPtr,
+        linkerPtr,
+        moduleName,
+        name,
+        tablePtr);
+  }
+
+  /**
+   * Define a global extern into a Linker using the caller's live store
+   * context.
+   *
+   * @return 0 on success, non-zero error code on failure
+   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a>
+   *     — mirror of {@code host:wasmtime@0.10.0/linker.linker.define-global}.
+   * @since 1.5.2
+   */
+  public int callerLinkerDefineGlobal(
+      final MemorySegment callerPtr,
+      final MemorySegment linkerPtr,
+      final MemorySegment moduleName,
+      final MemorySegment name,
+      final MemorySegment globalPtr) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(moduleName, "moduleName");
+    validatePointer(name, "name");
+    validatePointer(globalPtr, "globalPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_linker_define_global",
+        Integer.class,
+        callerPtr,
+        linkerPtr,
+        moduleName,
+        name,
+        globalPtr);
+  }
+
+  // =============================================================================
   // Panama Function FFI Operations
   // =============================================================================
 
@@ -2278,6 +2530,94 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         "wasmtime4j_panama_caller_debug_exit_frames",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    // F-Wasmtime4j-Panama-Caller-Scoped-Mutation-Java-Bindings r.2 slice 1
+    // (2026-07-28). 9 FFI descriptors matching the entries added by
+    // F-Wasmtime4j-Panama-Caller-Scoped-Mutation-FFI (closed same day).
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_grow_table",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS, // caller_ptr
+            ValueLayout.ADDRESS, // table_ptr
+            ValueLayout.JAVA_INT, // delta
+            ValueLayout.JAVA_LONG)); // init_ref_id
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_set_table_element",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // caller_ptr
+            ValueLayout.ADDRESS, // table_ptr
+            ValueLayout.JAVA_INT, // index
+            ValueLayout.JAVA_LONG)); // value_ref_id
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_grow_memory",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS, // caller_ptr
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.JAVA_LONG)); // delta_pages
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_read_memory",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // caller_ptr
+            ValueLayout.ADDRESS, // name (c_char*)
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_INT, // length
+            ValueLayout.ADDRESS)); // out_buf
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_write_memory",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // caller_ptr
+            ValueLayout.ADDRESS, // name (c_char*)
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.ADDRESS, // bytes
+            ValueLayout.JAVA_INT)); // len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_instantiate",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // caller_ptr
+            ValueLayout.ADDRESS, // instance_pre_ptr
+            ValueLayout.ADDRESS)); // instance_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_linker_define_memory",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // caller_ptr
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // module_name
+            ValueLayout.ADDRESS, // name
+            ValueLayout.ADDRESS)); // memory_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_linker_define_table",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // caller_ptr
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // module_name
+            ValueLayout.ADDRESS, // name
+            ValueLayout.ADDRESS)); // table_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_linker_define_global",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // caller_ptr
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // module_name
+            ValueLayout.ADDRESS, // name
+            ValueLayout.ADDRESS)); // global_ptr
   }
 
   private void initializeFunctionBindings() {
