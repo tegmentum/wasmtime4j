@@ -403,6 +403,42 @@ where
     }
 }
 
+/// Execute an FFI operation whose success value is a signed 64-bit integer
+/// (F-Wasmtime4j-Panama-Caller-Scoped-Mutation-FFI r.2 slice 1 2026-07-28).
+///
+/// On success: returns the operation's `i64` result.
+/// On failure or panic: stores the error via `set_last_error`, returns `-1`.
+///
+/// Used by Panama caller-scoped ops like `grow_table` / `grow_memory` whose
+/// natural return value is the previous size (nonneg `i64`); `-1` is a valid
+/// out-of-band sentinel because these ops never legitimately return -1.
+pub fn ffi_try_code_i64<F>(operation: F) -> i64
+where
+    F: FnOnce() -> WasmtimeResult<i64> + std::panic::UnwindSafe,
+{
+    let result = std::panic::catch_unwind(operation);
+    match result {
+        Ok(Ok(value)) => value,
+        Ok(Err(error)) => {
+            set_last_error(error);
+            -1
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            log::error!("Native panic in FFI call: {}", panic_msg);
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            set_last_error(error);
+            -1
+        }
+    }
+}
+
 /// Safe pointer dereference with validation
 ///
 /// # Safety

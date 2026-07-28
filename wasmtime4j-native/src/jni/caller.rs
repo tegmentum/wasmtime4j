@@ -429,8 +429,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerGr
 }
 
 /// Convert wasmtime::RefType to ValType for TableElement matching.
+///
+/// **Shared across FFI tiers** — `pub(crate)` so Panama's caller-scoped
+/// mutation FFI (F-Wasmtime4j-Panama-Caller-Scoped-Mutation-FFI r.2 2026-07-28)
+/// can reuse the same ref-id resolution logic. If a third FFI tier appears,
+/// move these three helpers (`ValType_from_ref_type`, `table_element_from_ref_id`,
+/// `table_element_to_ref`) to `crate::caller::core`.
 #[allow(non_snake_case)]
-fn ValType_from_ref_type(ref_type: &wasmtime::RefType) -> wasmtime::ValType {
+pub(crate) fn ValType_from_ref_type(ref_type: &wasmtime::RefType) -> wasmtime::ValType {
     wasmtime::ValType::Ref(ref_type.clone())
 }
 
@@ -438,7 +444,7 @@ fn ValType_from_ref_type(ref_type: &wasmtime::RefType) -> wasmtime::ValType {
 ///
 /// A `ref_id` of 0 encodes null. For funcref / externref, the id encodes into
 /// the corresponding variant. Non-reference table element types are rejected.
-fn table_element_from_ref_id(
+pub(crate) fn table_element_from_ref_id(
     element_type: &wasmtime::ValType,
     ref_id: jlong,
 ) -> crate::error::WasmtimeResult<TableElement> {
@@ -471,7 +477,7 @@ fn table_element_from_ref_id(
 
 /// Convert a TableElement (registry id) to a wasmtime::Ref by resolving the
 /// funcref through the shared function reference registry.
-fn table_element_to_ref(element: TableElement) -> crate::error::WasmtimeResult<wasmtime::Ref> {
+pub(crate) fn table_element_to_ref(element: TableElement) -> crate::error::WasmtimeResult<wasmtime::Ref> {
     match element {
         TableElement::FuncRef(None) => Ok(wasmtime::Ref::Func(None)),
         TableElement::FuncRef(Some(id)) => {

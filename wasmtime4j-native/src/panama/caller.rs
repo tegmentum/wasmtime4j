@@ -332,3 +332,93 @@ pub extern "C" fn wasmtime4j_panama_caller_debug_exit_frames(
         Err(_) => -2,   // Error
     }
 }
+
+// ===========================================================================
+// F-Wasmtime4j-Panama-Caller-Scoped-Mutation-FFI r.2 slice 1 (2026-07-28).
+//
+// Table mutation FFI parity with JNI's `nativeCallerGrowTable` +
+// `nativeCallerSetTableElement`. Bodies mirror the JNI natives verbatim —
+// same ref-id resolution helpers (lifted to `pub(crate)` in `jni/caller.rs`
+// this slice), same `caller.as_context_mut()` borrow-safe path per
+// doctrine-store-reentrant-lock-blocks-in-callback-2026-07-27.
+//
+// If a third FFI tier appears, move the shared helpers
+// (`ValType_from_ref_type`, `table_element_from_ref_id`,
+// `table_element_to_ref`) from `jni/caller.rs` to `crate::caller::core`.
+// ===========================================================================
+
+/// Grow a caller-visible Table by `delta` slots, initialized to `init_ref_id`
+/// (funcref registry id, externref registry id, or 0 for null).
+///
+/// Returns the previous table size on success, or `-1` on failure (error
+/// stored via `set_last_error`, retrievable with the last-error FFI).
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_grow_table(
+    caller_ptr: *mut c_void,
+    table_ptr: *mut c_void,
+    delta: c_int,
+    init_ref_id: i64,
+) -> i64 {
+    if caller_ptr.is_null() || table_ptr.is_null() {
+        return -1;
+    }
+    ffi_utils::ffi_try_code_i64(|| {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        let table = unsafe { *(table_ptr as *const wasmtime::Table) };
+
+        let table_ty = table.ty(&caller.as_context_mut());
+        let element_type =
+            crate::jni::caller::ValType_from_ref_type(table_ty.element());
+        let init_element =
+            crate::jni::caller::table_element_from_ref_id(&element_type, init_ref_id)?;
+        let init_ref = crate::jni::caller::table_element_to_ref(init_element)?;
+
+        let prev_size = table
+            .grow(&mut caller.as_context_mut(), delta as u64, init_ref)
+            .map_err(|e| crate::error::WasmtimeError::Runtime {
+                message: format!("Caller-scoped table grow failed: {}", e),
+                backtrace: None,
+            })?;
+        Ok(prev_size as i64)
+    })
+}
+
+/// Set a caller-visible Table's element at `index` to the value identified by
+/// `value_ref_id` (funcref registry id, externref registry id, or 0 for null).
+///
+/// Returns 0 on success, non-zero error code on failure. Error retrievable
+/// via the last-error FFI.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_set_table_element(
+    caller_ptr: *mut c_void,
+    table_ptr: *mut c_void,
+    index: c_int,
+    value_ref_id: i64,
+) -> c_int {
+    if caller_ptr.is_null() || table_ptr.is_null() {
+        return -1;
+    }
+    ffi_utils::ffi_try_code(|| {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        let table = unsafe { *(table_ptr as *const wasmtime::Table) };
+
+        let table_ty = table.ty(&caller.as_context_mut());
+        let element_type =
+            crate::jni::caller::ValType_from_ref_type(table_ty.element());
+        let element =
+            crate::jni::caller::table_element_from_ref_id(&element_type, value_ref_id)?;
+        let value_ref = crate::jni::caller::table_element_to_ref(element)?;
+
+        table
+            .set(&mut caller.as_context_mut(), index as u64, value_ref)
+            .map_err(|e| crate::error::WasmtimeError::Runtime {
+                message: format!("Caller-scoped table set failed: {}", e),
+                backtrace: None,
+            })?;
+        Ok(())
+    })
+}
