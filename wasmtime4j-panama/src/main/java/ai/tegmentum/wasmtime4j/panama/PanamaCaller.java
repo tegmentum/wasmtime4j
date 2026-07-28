@@ -407,6 +407,336 @@ final class PanamaCaller<T> implements Caller<T> {
     }
   }
 
+  // ===========================================================================
+  // F-Wasmtime4j-Panama-Caller-Scoped-Mutation-Java-Bindings r.3 slice 2
+  // (2026-07-28). Overrides the 9 Caller<T> mutation methods that inherit UOE
+  // defaults from the interface. Delegates to NativeInstanceBindings wrappers
+  // added by slice 1.
+  //
+  // Concrete-type discipline: mutation args must be Panama-tier types
+  // (PanamaTable, PanamaMemory, PanamaGlobal, PanamaLinker, PanamaInstancePre).
+  // Passing a JNI-tier or api-level wrapper throws IllegalArgumentException
+  // — mixing binding tiers is an operator error.
+  //
+  // Charter-scope exclusions preserved: {@code init} on growTable and
+  // {@code value} on setTableElement must be null (registry-id 0). Non-null
+  // funcref requires the FuncToRegistryId FFI which is out-of-scope for
+  // Panama's cleaner call surface (see charter §Out-of-scope).
+  // ===========================================================================
+
+  @Override
+  public int growTable(
+      final ai.tegmentum.wasmtime4j.WasmTable table, final int delta, final Object init)
+      throws WasmException {
+    if (table == null) {
+      throw new IllegalArgumentException("table cannot be null");
+    }
+    if (delta < 0) {
+      throw new IllegalArgumentException("delta cannot be negative");
+    }
+    final long initRefId = resolveRefIdForMutation(init, "growTable");
+    final MemorySegment tablePtr = extractPanamaTable(table).getNativeTable();
+    final long prev = bindings.callerGrowTable(callerPtr, tablePtr, delta, initRefId);
+    if (prev < 0) {
+      throw new WasmException(
+          "PanamaCaller.growTable failed (native returned " + prev + "); check last error");
+    }
+    return (int) prev;
+  }
+
+  @Override
+  public void setTableElement(
+      final ai.tegmentum.wasmtime4j.WasmTable table, final int index, final Object value)
+      throws WasmException {
+    if (table == null) {
+      throw new IllegalArgumentException("table cannot be null");
+    }
+    if (index < 0) {
+      throw new IllegalArgumentException("index cannot be negative");
+    }
+    final long valueRefId = resolveRefIdForMutation(value, "setTableElement");
+    final MemorySegment tablePtr = extractPanamaTable(table).getNativeTable();
+    final int rc = bindings.callerSetTableElement(callerPtr, tablePtr, index, valueRefId);
+    if (rc != 0) {
+      throw new WasmException(
+          "PanamaCaller.setTableElement failed (native returned " + rc + ")");
+    }
+  }
+
+  @Override
+  public long growMemory(
+      final ai.tegmentum.wasmtime4j.WasmMemory memory, final long deltaPages)
+      throws WasmException {
+    if (memory == null) {
+      throw new IllegalArgumentException("memory cannot be null");
+    }
+    if (deltaPages < 0) {
+      throw new IllegalArgumentException("deltaPages cannot be negative");
+    }
+    final MemorySegment memoryPtr = extractPanamaMemory(memory).getNativeMemory();
+    final long prev = bindings.callerGrowMemory(callerPtr, memoryPtr, deltaPages);
+    if (prev < 0) {
+      throw new WasmException(
+          "PanamaCaller.growMemory failed (native returned " + prev + ")");
+    }
+    return prev;
+  }
+
+  @Override
+  public byte[] readMemory(final String memoryName, final long offset, final int length)
+      throws WasmException {
+    if (memoryName == null) {
+      throw new IllegalArgumentException("memoryName cannot be null");
+    }
+    if (offset < 0) {
+      throw new IllegalArgumentException("offset cannot be negative");
+    }
+    if (length < 0) {
+      throw new IllegalArgumentException("length cannot be negative");
+    }
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(memoryName);
+      final MemorySegment outBuf = arena.allocate(length);
+      final int rc = bindings.callerReadMemory(callerPtr, nameSegment, offset, length, outBuf);
+      if (rc != 0) {
+        throw new WasmException(
+            "PanamaCaller.readMemory('" + memoryName + "') failed (native returned " + rc + ")");
+      }
+      final byte[] result = new byte[length];
+      MemorySegment.copy(outBuf, ValueLayout.JAVA_BYTE, 0, result, 0, length);
+      return result;
+    }
+  }
+
+  @Override
+  public void writeMemory(final String memoryName, final long offset, final byte[] bytes)
+      throws WasmException {
+    if (memoryName == null) {
+      throw new IllegalArgumentException("memoryName cannot be null");
+    }
+    if (offset < 0) {
+      throw new IllegalArgumentException("offset cannot be negative");
+    }
+    if (bytes == null) {
+      throw new IllegalArgumentException("bytes cannot be null");
+    }
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(memoryName);
+      final MemorySegment bytesSegment = arena.allocate(bytes.length);
+      MemorySegment.copy(bytes, 0, bytesSegment, ValueLayout.JAVA_BYTE, 0, bytes.length);
+      final int rc =
+          bindings.callerWriteMemory(callerPtr, nameSegment, offset, bytesSegment, bytes.length);
+      if (rc != 0) {
+        throw new WasmException(
+            "PanamaCaller.writeMemory('" + memoryName + "') failed (native returned " + rc + ")");
+      }
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.Instance instantiate(final ai.tegmentum.wasmtime4j.InstancePre pre)
+      throws WasmException {
+    if (pre == null) {
+      throw new IllegalArgumentException("pre cannot be null");
+    }
+    if (!(pre instanceof PanamaInstancePre panamaPre)) {
+      throw new IllegalArgumentException(
+          "PanamaCaller.instantiate requires a PanamaInstancePre; got "
+              + pre.getClass().getName());
+    }
+    final ai.tegmentum.wasmtime4j.Module module = panamaPre.getModule();
+    if (!(module instanceof PanamaModule panamaModule)) {
+      throw new IllegalArgumentException(
+          "PanamaCaller.instantiate: InstancePre's module is not a PanamaModule");
+    }
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment prePtr = panamaPre.getNativeInstancePre();
+      final MemorySegment instanceOut = arena.allocate(ValueLayout.ADDRESS);
+      final int rc = bindings.callerInstantiate(callerPtr, prePtr, instanceOut);
+      if (rc != 0) {
+        throw new WasmException(
+            "PanamaCaller.instantiate failed (native returned " + rc + ")");
+      }
+      final MemorySegment instanceHandle = instanceOut.get(ValueLayout.ADDRESS, 0);
+      if (instanceHandle == null || instanceHandle.equals(MemorySegment.NULL)) {
+        throw new WasmException(
+            "PanamaCaller.instantiate returned success but instance handle is null");
+      }
+      return new PanamaInstance(instanceHandle, panamaModule, store);
+    }
+  }
+
+  @Override
+  public void linkerDefineMemory(
+      final ai.tegmentum.wasmtime4j.Linker<?> linker,
+      final String moduleName,
+      final String name,
+      final ai.tegmentum.wasmtime4j.WasmMemory memory)
+      throws WasmException {
+    validateLinkerDefineArgs(linker, moduleName, name, memory, "linkerDefineMemory");
+    final MemorySegment linkerPtr = extractPanamaLinker(linker).getNativeLinker();
+    final MemorySegment memoryPtr = extractPanamaMemory(memory).getNativeMemory();
+    try (final Arena arena = Arena.ofConfined()) {
+      final int rc =
+          bindings.callerLinkerDefineMemory(
+              callerPtr,
+              linkerPtr,
+              arena.allocateFrom(moduleName),
+              arena.allocateFrom(name),
+              memoryPtr);
+      if (rc != 0) {
+        throw new WasmException(
+            "PanamaCaller.linkerDefineMemory '"
+                + moduleName
+                + "::"
+                + name
+                + "' failed (native returned "
+                + rc
+                + ")");
+      }
+    }
+  }
+
+  @Override
+  public void linkerDefineTable(
+      final ai.tegmentum.wasmtime4j.Linker<?> linker,
+      final String moduleName,
+      final String name,
+      final ai.tegmentum.wasmtime4j.WasmTable table)
+      throws WasmException {
+    validateLinkerDefineArgs(linker, moduleName, name, table, "linkerDefineTable");
+    final MemorySegment linkerPtr = extractPanamaLinker(linker).getNativeLinker();
+    final MemorySegment tablePtr = extractPanamaTable(table).getNativeTable();
+    try (final Arena arena = Arena.ofConfined()) {
+      final int rc =
+          bindings.callerLinkerDefineTable(
+              callerPtr,
+              linkerPtr,
+              arena.allocateFrom(moduleName),
+              arena.allocateFrom(name),
+              tablePtr);
+      if (rc != 0) {
+        throw new WasmException(
+            "PanamaCaller.linkerDefineTable '"
+                + moduleName
+                + "::"
+                + name
+                + "' failed (native returned "
+                + rc
+                + ")");
+      }
+    }
+  }
+
+  @Override
+  public void linkerDefineGlobal(
+      final ai.tegmentum.wasmtime4j.Linker<?> linker,
+      final String moduleName,
+      final String name,
+      final ai.tegmentum.wasmtime4j.WasmGlobal global)
+      throws WasmException {
+    validateLinkerDefineArgs(linker, moduleName, name, global, "linkerDefineGlobal");
+    final MemorySegment linkerPtr = extractPanamaLinker(linker).getNativeLinker();
+    final MemorySegment globalPtr = extractPanamaGlobal(global).getNativeGlobal();
+    try (final Arena arena = Arena.ofConfined()) {
+      final int rc =
+          bindings.callerLinkerDefineGlobal(
+              callerPtr,
+              linkerPtr,
+              arena.allocateFrom(moduleName),
+              arena.allocateFrom(name),
+              globalPtr);
+      if (rc != 0) {
+        throw new WasmException(
+            "PanamaCaller.linkerDefineGlobal '"
+                + moduleName
+                + "::"
+                + name
+                + "' failed (native returned "
+                + rc
+                + ")");
+      }
+    }
+  }
+
+  // --- helpers ---
+
+  private static PanamaTable extractPanamaTable(final ai.tegmentum.wasmtime4j.WasmTable table) {
+    if (table instanceof PanamaTable pt) {
+      return pt;
+    }
+    throw new IllegalArgumentException(
+        "PanamaCaller mutation ops require PanamaTable; got " + table.getClass().getName());
+  }
+
+  private static PanamaMemory extractPanamaMemory(final ai.tegmentum.wasmtime4j.WasmMemory memory) {
+    if (memory instanceof PanamaMemory pm) {
+      return pm;
+    }
+    throw new IllegalArgumentException(
+        "PanamaCaller mutation ops require PanamaMemory; got " + memory.getClass().getName());
+  }
+
+  private static PanamaGlobal extractPanamaGlobal(final ai.tegmentum.wasmtime4j.WasmGlobal global) {
+    if (global instanceof PanamaGlobal pg) {
+      return pg;
+    }
+    throw new IllegalArgumentException(
+        "PanamaCaller mutation ops require PanamaGlobal; got " + global.getClass().getName());
+  }
+
+  private static PanamaLinker<?> extractPanamaLinker(
+      final ai.tegmentum.wasmtime4j.Linker<?> linker) {
+    if (linker instanceof PanamaLinker<?> pl) {
+      return pl;
+    }
+    throw new IllegalArgumentException(
+        "PanamaCaller.linkerDefine* requires PanamaLinker; got " + linker.getClass().getName());
+  }
+
+  private void validateLinkerDefineArgs(
+      final ai.tegmentum.wasmtime4j.Linker<?> linker,
+      final String moduleName,
+      final String name,
+      final Object extern,
+      final String opName) {
+    if (linker == null) {
+      throw new IllegalArgumentException(opName + ": linker cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException(opName + ": moduleName cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException(opName + ": name cannot be null");
+    }
+    if (extern == null) {
+      throw new IllegalArgumentException(opName + ": extern cannot be null");
+    }
+  }
+
+  /**
+   * Resolve a mutation-op {@code init}/{@code value} argument to a funcref
+   * registry id. Only {@code null} is supported at charter r.3 scope
+   * (registry-id 0). Non-null funcref requires the {@code FuncToRegistryId}
+   * FFI which is out-of-scope for Panama's cleaner call surface (see charter
+   * §Out-of-scope in
+   * {@code f-wasmtime4j-panama-caller-scoped-mutation-ffi-charter-2026-07-28.md}).
+   */
+  private static long resolveRefIdForMutation(final Object value, final String opName) {
+    if (value == null) {
+      return 0L;
+    }
+    throw new UnsupportedOperationException(
+        "PanamaCaller."
+            + opName
+            + ": non-null init/value not supported at Panama tier. "
+            + "Only null (registry-id 0) is accepted. Non-null funcref requires "
+            + "FuncToRegistryId FFI which is out-of-scope per charter "
+            + "f-wasmtime4j-panama-caller-scoped-mutation-ffi-charter-2026-07-28. "
+            + "Passed value type: "
+            + value.getClass().getName());
+  }
+
   @Override
   public String toString() {
     return String.format("PanamaCaller{handle=0x%x}", callerHandle);
