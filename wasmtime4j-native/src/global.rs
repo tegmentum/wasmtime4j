@@ -144,6 +144,159 @@ impl Global {
         store.with_context_ro(|ctx| Ok(global.ty(&ctx)))
     }
 
+    /// Read the current value of the global using a wasmtime `StoreContextMut`
+    /// borrowed from an active host callback (F-Wasmtime4j-Caller-Scoped-Store-
+    /// Reentrancy r.2 slice 3 2026-07-27).
+    ///
+    /// Callback-safe counterpart to [`Global::get`] — the outer variant calls
+    /// `Store::with_context` which re-acquires the store's ReentrantLock,
+    /// deadlocking / SIGSEGVing from a callback frame per
+    /// `doctrine-store-reentrant-lock-blocks-in-callback-2026-07-27`.
+    ///
+    /// Uses `AsContextMut` rather than `AsContext` because wasmtime's
+    /// `Global::get` requires the mutable variant (may root references into
+    /// the store's GC set on retrieval).
+    pub fn get_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+    ) -> WasmtimeResult<GlobalValue> {
+        let global = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire global lock: {}", e),
+        })?;
+        let wasmtime_value = global.get(ctx);
+        Self::wasmtime_val_to_global_value(wasmtime_value)
+    }
+
+    /// Set the value of the global using a wasmtime `StoreContextMut` borrowed
+    /// from an active host callback. Callback-safe counterpart to
+    /// [`Global::set`].
+    ///
+    /// Note on `GlobalValue::I31Ref`: needs a `wasmtime::AnyRef::from_i31`
+    /// call which itself takes `AsContextMut`. The sibling threads the caller's
+    /// context through so this works from within a callback without the outer
+    /// helper's nested `store.with_context` acquisition.
+    ///
+    /// `GlobalValue::StructRef` / `GlobalValue::ArrayRef` remain unsupported
+    /// (same as outer [`Global::set`] — they need a concrete typed reference
+    /// which the general val bridge doesn't carry).
+    pub fn set_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+        value: GlobalValue,
+    ) -> WasmtimeResult<()> {
+        if self.metadata.mutability != Mutability::Var {
+            return Err(WasmtimeError::Runtime {
+                message: "Cannot set value on immutable global variable".to_string(),
+                backtrace: None,
+            });
+        }
+        Self::validate_value_type(&value, &self.metadata.value_type)?;
+
+        let global = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire global lock: {}", e),
+        })?;
+
+        let wasmtime_value = Self::global_value_to_wasmtime_val_ctx(value, ctx)?;
+
+        global
+            .set(ctx, wasmtime_value)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Caller-scoped global set failed: {}", e),
+                backtrace: None,
+            })
+    }
+
+    /// Read global variable type information using a wasmtime `StoreContext`
+    /// borrowed from an active host callback. Callback-safe counterpart to
+    /// [`Global::global_type`].
+    pub fn global_type_with_context<T: 'static>(
+        &self,
+        ctx: &wasmtime::StoreContext<'_, T>,
+    ) -> WasmtimeResult<GlobalType> {
+        let global = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire global lock: {}", e),
+        })?;
+        Ok(global.ty(ctx))
+    }
+
+    /// Ctx-variant of [`Global::global_value_to_wasmtime_val`] — needed by
+    /// `set_with_context` because the I31Ref case constructs an `AnyRef`
+    /// via `wasmtime::AnyRef::from_i31(&mut ctx, i31)`. Duplicates the outer
+    /// helper's shape but sources the mutable-context from the caller
+    /// rather than re-acquiring `store.with_context` (which would deadlock
+    /// from within a callback frame). Other cases are structurally
+    /// identical to the outer helper.
+    fn global_value_to_wasmtime_val_ctx<T: 'static>(
+        value: GlobalValue,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+    ) -> WasmtimeResult<Val> {
+        let wasmtime_val = match value {
+            GlobalValue::I32(v) => Val::I32(v),
+            GlobalValue::I64(v) => Val::I64(v),
+            GlobalValue::F32(v) => Val::F32(v.to_bits()),
+            GlobalValue::F64(v) => Val::F64(v.to_bits()),
+            GlobalValue::V128(v) => Val::V128(wasmtime::V128::from(u128::from_le_bytes(v))),
+            GlobalValue::FuncRef(func_id) => match func_id {
+                Some(id) => {
+                    use crate::table::core::get_function_reference;
+                    match get_function_reference(id)? {
+                        Some(func) => Val::FuncRef(Some(func)),
+                        None => {
+                            log::warn!("Funcref ID {} not found in registry", id);
+                            Val::FuncRef(None)
+                        }
+                    }
+                }
+                None => Val::FuncRef(None),
+            },
+            GlobalValue::ExternRef(extern_id) => {
+                if extern_id.is_some() {
+                    log::warn!(
+                        "Non-null ExternRef in caller-scoped global set discarded; \
+                         reference-registry integration deferred"
+                    );
+                }
+                Val::ExternRef(None)
+            }
+            GlobalValue::AnyRef(ref_id) => match ref_id {
+                Some(id) => {
+                    use crate::hostfunc::{take_gc_ref, GcRefEntry};
+                    match take_gc_ref(id) {
+                        Some(GcRefEntry::AnyRef(Some(rooted))) => Val::AnyRef(Some(rooted)),
+                        _ => {
+                            log::warn!("AnyRef GC ref {} not found in registry", id);
+                            Val::AnyRef(None)
+                        }
+                    }
+                }
+                None => Val::AnyRef(None),
+            },
+            GlobalValue::EqRef(ref_id) => match ref_id {
+                Some(id) => {
+                    use crate::hostfunc::{take_gc_ref, GcRefEntry};
+                    match take_gc_ref(id) {
+                        Some(GcRefEntry::AnyRef(Some(rooted))) => Val::AnyRef(Some(rooted)),
+                        _ => {
+                            log::warn!("EqRef GC ref {} not found in registry", id);
+                            Val::AnyRef(None)
+                        }
+                    }
+                }
+                None => Val::AnyRef(None),
+            },
+            GlobalValue::I31Ref(maybe_value) => match maybe_value {
+                Some(v) => {
+                    let i31 = wasmtime::I31::wrapping_i32(v);
+                    let anyref = wasmtime::AnyRef::from_i31(&mut *ctx, i31);
+                    Val::AnyRef(Some(anyref))
+                }
+                None => Val::AnyRef(None),
+            },
+            GlobalValue::StructRef(_) | GlobalValue::ArrayRef(_) => Val::AnyRef(None),
+        };
+        Ok(wasmtime_val)
+    }
+
     /// Validate that a GlobalValue matches the expected ValType
     fn validate_value_type(value: &GlobalValue, expected_type: &ValType) -> WasmtimeResult<()> {
         use wasmtime::HeapType;
