@@ -566,6 +566,19 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       final PanamaStore panamaStore = (PanamaStore) store;
       final PanamaModule panamaModule = (PanamaModule) module;
 
+      // F-Wasmtime4j-Panama-Callback-Caller-Wire r.3 (2026-07-28) — bind
+      // each linker-owned host-function wrapper to the store used at this
+      // instantiate. `invokeHostFunctionCallback` needs a PanamaStore to
+      // construct a real PanamaCaller from the wasmtime::Caller ptr Rust
+      // forwards; without this binding a CallerAwareHostFunction would
+      // reach the callback path with no way to build one.
+      for (final Long callbackId : registeredCallbackIds) {
+        final HostFunctionWrapper wrapper = HOST_FUNCTION_CALLBACKS.get(callbackId);
+        if (wrapper != null && wrapper.getStore() == null) {
+          wrapper.setStore(panamaStore);
+        }
+      }
+
       // If we have a WASI context, attach it to the store before instantiation
       if (wasiContext != null) {
         final int hasWasi = NATIVE_STORE_BINDINGS.storeHasWasiContext(panamaStore.getNativeStore());
@@ -824,11 +837,19 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   private MemorySegment createCallbackStub() {
     try {
       // Define the function descriptor for the callback
-      // int callback(long callbackId, void* paramsPtr, int paramsLen, void* resultsPtr,
-      //              int resultsLen, char* errorMsgPtr, int errorMsgLen)
+      // F-Wasmtime4j-Panama-Callback-Caller-Wire r.3 (2026-07-28) — the
+      // Rust callback ABI now carries `caller_ptr` as the first parameter so
+      // Panama's CallerAwareHostFunction can see a real wasmtime::Caller ptr
+      // (previously fell back to store-address). See
+      // [[f-wasmtime4j-panama-callback-caller-wire-charter-2026-07-28]].
+      //
+      // int callback(void* callerPtr, long callbackId, void* paramsPtr,
+      //              int paramsLen, void* resultsPtr, int resultsLen,
+      //              char* errorMsgPtr, int errorMsgLen)
       final FunctionDescriptor callbackDescriptor =
           FunctionDescriptor.of(
               ValueLayout.JAVA_INT, // return int
+              ValueLayout.ADDRESS, // callerPtr (r.3 addition)
               ValueLayout.JAVA_LONG, // callbackId
               ValueLayout.ADDRESS, // paramsPtr
               ValueLayout.JAVA_INT, // paramsLen
@@ -845,6 +866,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
               "invokeHostFunctionCallback",
               java.lang.invoke.MethodType.methodType(
                   int.class,
+                  MemorySegment.class, // callerPtr (r.3 addition)
                   long.class,
                   MemorySegment.class,
                   int.class,
@@ -925,6 +947,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    */
   @SuppressWarnings("unused") // Called from native code via function pointer
   public static int invokeHostFunctionCallback(
+      final MemorySegment callerPtr,
       final long callbackId,
       final MemorySegment paramsPtr,
       final int paramsLen,
@@ -961,9 +984,16 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
         params[i] = WasmValueMarshaller.unmarshalWasmValue(paramsSegment, i, null);
       }
 
-      // Call the host function
+      // Call the host function.
+      // F-Wasmtime4j-Panama-Callback-Caller-Wire r.3 (2026-07-28): if the
+      // impl is CallerAware, thread the live wasmtime::Caller ptr into
+      // PanamaHostFunction.CALLER_CONTEXT so PanamaCallerContextProvider
+      // can hand a real PanamaCaller to the user callback. Previously
+      // this path had no caller-aware handling at all.
       LOGGER.fine("Executing host function: " + wrapper.moduleName + "::" + wrapper.name);
-      final WasmValue[] results = wrapper.getImplementation().execute(params);
+      final WasmValue[] results =
+          PanamaHostFunction.invokeWithOptionalCallerContext(
+              wrapper.getImplementation(), wrapper.getStore(), callerPtr, params);
 
       // Validate result count
       if (results.length != resultsLen) {
@@ -1552,6 +1582,12 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     private final String moduleName;
     private final String name;
     private final HostFunction implementation;
+    // F-Wasmtime4j-Panama-Callback-Caller-Wire r.3 (2026-07-28) — populated
+    // by PanamaLinker.instantiate so invokeHostFunctionCallback can build a
+    // real PanamaCaller when the impl is CallerAware. Left null until
+    // instantiate binds the store; caller-aware handling in
+    // invokeHostFunctionCallback then requires a non-null store to proceed.
+    private volatile PanamaStore store;
 
     HostFunctionWrapper(
         final String moduleName, final String name, final HostFunction implementation) {
@@ -1567,6 +1603,14 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     HostFunction getImplementation() {
       return implementation;
+    }
+
+    PanamaStore getStore() {
+      return store;
+    }
+
+    void setStore(final PanamaStore store) {
+      this.store = store;
     }
   }
 }

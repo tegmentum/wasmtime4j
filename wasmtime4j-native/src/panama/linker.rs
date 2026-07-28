@@ -25,7 +25,14 @@ use wasmtime::{FuncType, ValType};
 /// - error_message_len: c_uint - Size of error message buffer
 ///
 /// Returns: c_int - 0 on success, non-zero on error
+// F-Wasmtime4j-Panama-Callback-Caller-Wire r.2 (2026-07-28) — added
+// `caller_ptr` as the first parameter so Panama's Java-side callback can
+// construct a real `PanamaCaller` from a live `wasmtime::Caller<'_,
+// StoreData>` pointer (previously fell back to store-address). Unblocks
+// positive-path runtime testing for all r.2-r.4 mutation methods added
+// by [[f-wasmtime4j-panama-consumer-gated-followups-charter-2026-07-28]].
 type PanamaHostFunctionCallback = extern "C" fn(
+    caller_ptr: *mut c_void,
     callback_id: i64,
     params_ptr: *const c_void,
     params_len: c_uint,
@@ -45,7 +52,7 @@ struct PanamaHostFunctionCallbackImpl {
 impl HostFunctionCallback for PanamaHostFunctionCallbackImpl {
     fn execute(
         &self,
-        _caller: &mut wasmtime::Caller<'_, crate::store::StoreData>,
+        caller: &mut wasmtime::Caller<'_, crate::store::StoreData>,
         params: &[WasmValue],
     ) -> crate::WasmtimeResult<Vec<WasmValue>> {
         // Convert internal WasmValue to FFI-safe format
@@ -66,8 +73,16 @@ impl HostFunctionCallback for PanamaHostFunctionCallbackImpl {
         const ERROR_BUFFER_SIZE: usize = 1024;
         let mut error_message_buffer = vec![0u8; ERROR_BUFFER_SIZE];
 
+        // F-Wasmtime4j-Panama-Callback-Caller-Wire r.2 (2026-07-28):
+        // forward the live wasmtime::Caller pointer as the first callback arg
+        // so Panama's Java-side callback can construct a real PanamaCaller
+        // instead of falling back to store-address.
+        let caller_ptr =
+            caller as *mut wasmtime::Caller<'_, crate::store::StoreData> as *mut c_void;
+
         // Call the Panama function pointer with FFI-safe structs
         let result_code = (self.callback_fn)(
+            caller_ptr,
             self.callback_id,
             ffi_params.as_ptr() as *const c_void,
             ffi_params.len() as c_uint,

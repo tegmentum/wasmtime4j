@@ -507,6 +507,11 @@ public final class PanamaHostFunction implements WasmFunction {
     try {
       final MethodHandles.Lookup lookup = MethodHandles.lookup();
 
+      // F-Wasmtime4j-Panama-Callback-Caller-Wire r.3 (2026-07-28) — Rust
+      // `StoreHostFunctionCallback` now carries `caller_ptr` as the first
+      // parameter. The Java stub signature must match; ffiCallback receives
+      // and forwards it through invokeWithOptionalCallerContext.
+
       // Create method handle for the FFI callback
       final MethodHandle ffiCallbackHandle =
           lookup.findStatic(
@@ -514,6 +519,7 @@ public final class PanamaHostFunction implements WasmFunction {
               "ffiCallback",
               MethodType.methodType(
                   int.class, // return type: c_int
+                  MemorySegment.class, // caller_ptr: *mut c_void (r.3 addition)
                   long.class, // callback_id: i64
                   MemorySegment.class, // params_ptr: *const c_void
                   int.class, // params_len: c_uint
@@ -527,6 +533,7 @@ public final class PanamaHostFunction implements WasmFunction {
       final FunctionDescriptor ffiDescriptor =
           FunctionDescriptor.of(
               ValueLayout.JAVA_INT, // return type: c_int
+              ValueLayout.ADDRESS, // caller_ptr: *mut c_void (r.3 addition)
               ValueLayout.JAVA_LONG, // callback_id: i64
               ValueLayout.ADDRESS, // params_ptr: *const c_void
               ValueLayout.JAVA_INT, // params_len: c_uint
@@ -567,6 +574,7 @@ public final class PanamaHostFunction implements WasmFunction {
    */
   @SuppressWarnings("unused") // Called via upcall stub
   private static int ffiCallback(
+      final MemorySegment callerPtr,
       final long callbackId,
       final MemorySegment paramsPtr,
       final int paramsLen,
@@ -579,6 +587,8 @@ public final class PanamaHostFunction implements WasmFunction {
       logger.fine(
           "FFI callback entered: callbackId="
               + callbackId
+              + ", callerPtr=0x"
+              + Long.toHexString(callerPtr == null ? 0L : callerPtr.address())
               + ", paramsLen="
               + paramsLen
               + ", resultsLen="
@@ -602,8 +612,20 @@ public final class PanamaHostFunction implements WasmFunction {
       // Unmarshal FFI parameters to WasmValue array
       final WasmValue[] wasmParams = unmarshalFfiParams(paramsPtr, paramsLen, hostFunction);
 
-      // Invoke the Java callback
-      final WasmValue[] wasmResults = hostFunction.callback.execute(wasmParams);
+      // F-Wasmtime4j-Panama-Callback-Caller-Wire r.3 (2026-07-28) — thread
+      // the real callerPtr into CALLER_CONTEXT when the impl is
+      // CallerAware. Previously this path had no caller-aware handling at
+      // all (the caller-aware branch lived on nativeCallback with a
+      // store-address fallback).
+      final PanamaStore contextStore =
+          hostFunction.storeRef != null ? hostFunction.storeRef.get() : null;
+      final WasmValue[] wasmResults =
+          invokeWithOptionalCallerContext(
+              hostFunction.implementation,
+              hostFunction.callback,
+              contextStore,
+              callerPtr,
+              wasmParams);
 
       // Marshal results back to FFI format
       marshalFfiResults(resultsPtr, resultsLen, wasmResults, hostFunction);
@@ -1346,6 +1368,78 @@ public final class PanamaHostFunction implements WasmFunction {
       case FUNCREF, EXTERNREF -> 0L; // Null pointer/handle
       default -> throw new IllegalArgumentException("Unsupported value type: " + valueType);
     };
+  }
+
+  /**
+   * F-Wasmtime4j-Panama-Callback-Caller-Wire r.3 (2026-07-28) — shared
+   * caller-context threader used by both the linker path
+   * ({@link PanamaLinker#invokeHostFunctionCallback}) and the store path
+   * ({@link #ffiCallback}).
+   *
+   * <p>If {@code impl} is a {@link HostFunction.CallerAwareHostFunction},
+   * this builds a {@link PanamaCaller} from the live {@code callerPtr}
+   * (received across the FFI boundary from Rust's
+   * {@code PanamaHostFunctionCallbackImpl::execute} /
+   * {@code StoreHostFunctionCallbackImpl::execute}), stashes it in
+   * {@link #CALLER_CONTEXT}, and invokes {@code impl.execute(params)}.
+   * On any exit path (return or exception) the caller-context is
+   * cleared so a subsequent callback on the same thread doesn't inherit
+   * the reference.
+   *
+   * <p>When the impl is not caller-aware, or when either {@code store}
+   * or {@code callerPtr} is null, this falls back to invoking
+   * {@code fallbackCallback} without setting any caller context — same
+   * behavior as the pre-r.3 code paths.
+   *
+   * @param impl the user's HostFunction (may be CallerAware)
+   * @param fallbackCallback the callback to invoke when caller-aware
+   *     handling is not applicable
+   * @param store the PanamaStore this callback belongs to (from the
+   *     linker's registered wrappers or the host function's storeRef)
+   * @param callerPtr live {@code wasmtime::Caller<'_, StoreData>*} from
+   *     Rust; may be null if the FFI wire didn't provide one
+   * @param params unmarshalled callback parameters
+   * @return the callback's return values
+   * @throws Exception whatever the callback throws
+   */
+  static WasmValue[] invokeWithOptionalCallerContext(
+      final HostFunction impl,
+      final HostFunctionCallback fallbackCallback,
+      final PanamaStore store,
+      final MemorySegment callerPtr,
+      final WasmValue[] params)
+      throws Exception {
+    final boolean isCallerAware = impl instanceof HostFunction.CallerAwareHostFunction;
+    final boolean canSupply =
+        isCallerAware
+            && store != null
+            && callerPtr != null
+            && !callerPtr.equals(MemorySegment.NULL)
+            && callerPtr.address() != 0L;
+    if (!canSupply) {
+      return fallbackCallback.execute(params);
+    }
+    final PanamaCaller<?> caller = new PanamaCaller<>(callerPtr.address(), store);
+    CALLER_CONTEXT.set(caller);
+    try {
+      return impl.execute(params);
+    } finally {
+      CALLER_CONTEXT.remove();
+    }
+  }
+
+  /**
+   * Overload used by {@link PanamaLinker#invokeHostFunctionCallback} where
+   * the wrapper doesn't carry a separate fallback callback — the impl IS
+   * the callback either way.
+   */
+  static WasmValue[] invokeWithOptionalCallerContext(
+      final HostFunction impl,
+      final PanamaStore store,
+      final MemorySegment callerPtr,
+      final WasmValue[] params)
+      throws Exception {
+    return invokeWithOptionalCallerContext(impl, impl::execute, store, callerPtr, params);
   }
 
   /** Native cleanup method called by the arena manager. */

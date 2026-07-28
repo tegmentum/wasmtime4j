@@ -362,8 +362,13 @@ pub extern "C" fn wasmtime4j_panama_store_get_metadata(
     })
 }
 
+// F-Wasmtime4j-Panama-Callback-Caller-Wire r.2 (2026-07-28) — added
+// `caller_ptr` as the first parameter, parallel to
+// `PanamaHostFunctionCallback` in `linker.rs`.
+
 /// Callback type for Panama host functions used in store-level creation
 type StoreHostFunctionCallback = extern "C" fn(
+    caller_ptr: *mut c_void,
     callback_id: i64,
     params_ptr: *const c_void,
     params_len: c_uint,
@@ -448,7 +453,7 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
         impl HostFunctionCallback for StoreHostFunctionCallbackImpl {
             fn execute(
                 &self,
-                _caller: &mut wasmtime::Caller<'_, crate::store::StoreData>,
+                caller: &mut wasmtime::Caller<'_, crate::store::StoreData>,
                 params: &[WasmValue],
             ) -> crate::WasmtimeResult<Vec<WasmValue>> {
                 log::debug!("[STORE_CB] StoreHostFunctionCallbackImpl.execute, callback_id={}, params.len={}, expected_results={}",
@@ -474,8 +479,16 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
                 const ERROR_BUFFER_SIZE: usize = 1024;
                 let mut error_message_buffer = vec![0u8; ERROR_BUFFER_SIZE];
 
+                // F-Wasmtime4j-Panama-Callback-Caller-Wire r.2 (2026-07-28):
+                // forward live wasmtime::Caller pointer through the callback
+                // — parallel to the change in linker.rs.
+                let caller_ptr =
+                    caller as *mut wasmtime::Caller<'_, crate::store::StoreData>
+                        as *mut c_void;
+
                 // Call the Panama function pointer with FFI-safe structs
                 let result_code = (self.callback_fn)(
+                    caller_ptr,
                     self.callback_id,
                     ffi_params.as_ptr() as *const c_void,
                     ffi_params.len() as c_uint,
@@ -620,7 +633,7 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function_unchecked(
         impl HostFunctionCallback for StoreHostFunctionCallbackImpl {
             fn execute(
                 &self,
-                _caller: &mut wasmtime::Caller<'_, crate::store::StoreData>,
+                caller: &mut wasmtime::Caller<'_, crate::store::StoreData>,
                 params: &[WasmValue],
             ) -> crate::WasmtimeResult<Vec<WasmValue>> {
                 let ffi_params: Vec<crate::instance::FfiWasmValue> = params
@@ -640,7 +653,15 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function_unchecked(
                 const ERROR_BUFFER_SIZE: usize = 1024;
                 let mut error_message_buffer = vec![0u8; ERROR_BUFFER_SIZE];
 
+                // F-Wasmtime4j-Panama-Callback-Caller-Wire r.2 (2026-07-28):
+                // forward the live wasmtime::Caller pointer (parallel to the
+                // sibling StoreHostFunctionCallbackImpl earlier in this file).
+                let caller_ptr =
+                    caller as *mut wasmtime::Caller<'_, crate::store::StoreData>
+                        as *mut c_void;
+
                 let result_code = (self.callback_fn)(
+                    caller_ptr,
                     self.callback_id,
                     ffi_params.as_ptr() as *const c_void,
                     ffi_params.len() as c_uint,

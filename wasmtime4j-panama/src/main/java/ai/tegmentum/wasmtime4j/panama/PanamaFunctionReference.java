@@ -980,12 +980,22 @@ public final class PanamaFunctionReference implements FunctionReference {
    */
   private static MemorySegment createGlobalCallbackStub() {
     try {
+      // F-Wasmtime4j-Panama-Callback-Caller-Wire r.3 (2026-07-28) — Rust
+      // `PanamaHostFunctionCallback` (also used by
+      // `wasmtime4j_panama_function_reference_create`) now carries
+      // `caller_ptr` as the first parameter. Function reference callbacks
+      // don't currently thread the caller through to user code — they're
+      // invoked from table/global slots, not from live wasm callback
+      // frames — but the stub must match the FFI ABI regardless.
+
       // Define the function descriptor for the callback
-      // int callback(long callbackId, void* paramsPtr, int paramsLen, void* resultsPtr,
-      //              int resultsLen, char* errorMsgPtr, int errorMsgLen)
+      // int callback(void* callerPtr, long callbackId, void* paramsPtr,
+      //              int paramsLen, void* resultsPtr, int resultsLen,
+      //              char* errorMsgPtr, int errorMsgLen)
       final FunctionDescriptor callbackDescriptor =
           FunctionDescriptor.of(
               ValueLayout.JAVA_INT, // return int
+              ValueLayout.ADDRESS, // callerPtr (r.3 addition)
               ValueLayout.JAVA_LONG, // callbackId
               ValueLayout.ADDRESS, // paramsPtr
               ValueLayout.JAVA_INT, // paramsLen
@@ -1002,6 +1012,7 @@ public final class PanamaFunctionReference implements FunctionReference {
               "invokeNativeCallback",
               java.lang.invoke.MethodType.methodType(
                   int.class,
+                  MemorySegment.class, // callerPtr (r.3 addition)
                   long.class,
                   MemorySegment.class,
                   int.class,
@@ -1043,6 +1054,7 @@ public final class PanamaFunctionReference implements FunctionReference {
    */
   @SuppressWarnings("unused") // Called by native code through upcall stub
   public static int invokeNativeCallback(
+      final MemorySegment callerPtr,
       final long callbackId,
       final MemorySegment paramsPtr,
       final int paramsLen,
@@ -1050,6 +1062,10 @@ public final class PanamaFunctionReference implements FunctionReference {
       final int resultsLen,
       final MemorySegment errorMsgPtr,
       final int errorMsgLen) {
+    // F-Wasmtime4j-Panama-Callback-Caller-Wire r.3 (2026-07-28) — callerPtr
+    // is not currently threaded to funcref user code (function references
+    // aren't invoked as caller-aware host functions today); parameter
+    // present to match the shared Rust callback ABI.
     try {
       // Look up the function reference
       final PanamaFunctionReference funcRef = FUNCTION_REFERENCE_REGISTRY.get(callbackId);

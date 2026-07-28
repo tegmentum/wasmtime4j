@@ -157,12 +157,21 @@ pub extern "C" fn wasmtime4j_panama_caller_get_memory(
         Err(_) => return -1, // Invalid UTF-8
     };
 
+    // F-Wasmtime4j-Panama-Callback-Caller-Wire r.4 (2026-07-28): aligned
+    // return convention with `wasmtime4j_panama_caller_get_function` /
+    // `_get_table` / `_get_global` — 0 for both success (out-ptr populated)
+    // AND not-found (out-ptr set null). This was previously a per-FFI
+    // divergence (get_memory alone returned 1 for success) that stayed
+    // hidden while the callback wire fed store-address instead of a real
+    // caller pointer; the caller-wire arc's positive-path harness surfaced
+    // it as caller.getMemory returning empty for an actually-present
+    // export.
     match core::caller_get_memory(caller, name_str) {
         Ok(Some(memory)) => {
             unsafe {
                 *memory_out = Box::into_raw(Box::new(memory)) as *mut c_void;
             }
-            1 // Memory found
+            0 // Memory found
         }
         Ok(None) => {
             unsafe {
