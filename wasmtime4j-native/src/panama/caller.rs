@@ -291,10 +291,30 @@ pub extern "C" fn wasmtime4j_panama_caller_get_table(
                 message: e.to_string(),
             })?;
 
+        // F-Wasmtime4j-Panama-Table-From-Caller-Wrapper-Fix (2026-07-28):
+        // wrap the returned wasmtime::Table in a `crate::table::Table`
+        // wrapper (via `from_wasmtime_table_with_context`). Downstream
+        // consumers — notably `wasmtime4j_panama_table_metadata` invoked
+        // by `PanamaTable`'s constructor — deref this ptr as
+        // `*const crate::table::Table` (see `crate::table::core::
+        // get_table_ref`). Prior code boxed a raw wasmtime::Table,
+        // causing UB when Java-side PanamaTable construction queried
+        // metadata. Sibling `caller_grow_table` reads the wrapper's
+        // inner via the same helper (updated in this arc's follow-up).
         match core::caller_get_table(caller, name_str)? {
-            Some(table) => {
+            Some(wasmtime_table) => {
+                use wasmtime::AsContextMut;
+                // Pass None for name to avoid string_to_c_char round-trip
+                // in the panama_table_metadata path — Java-side wraps this
+                // via PanamaTable which caches its own name from the
+                // Java-side caller export lookup.
+                let wrapped = crate::table::Table::from_wasmtime_table_with_context(
+                    wasmtime_table,
+                    caller.as_context_mut(),
+                    None,
+                );
                 unsafe {
-                    *table_out = Box::into_raw(Box::new(table)) as *mut c_void;
+                    *table_out = Box::into_raw(Box::new(wrapped)) as *mut c_void;
                 }
                 Ok(()) // Success
             }
@@ -392,7 +412,16 @@ pub extern "C" fn wasmtime4j_panama_caller_grow_table(
         use wasmtime::AsContextMut;
 
         let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
-        let table = unsafe { *(table_ptr as *const wasmtime::Table) };
+        // F-Wasmtime4j-Panama-Table-From-Caller-Wrapper-Fix (2026-07-28):
+        // table_ptr is now a *const crate::table::Table wrapper per the
+        // sibling caller_get_table fix. Extract the inner wasmtime::Table
+        // via lock-and-copy (WasmtimeTable is Copy).
+        let table_wrapper =
+            unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
+        let inner_arc = table_wrapper.wasmtime_table();
+        let table = *inner_arc.lock().map_err(|e| crate::error::WasmtimeError::Concurrency {
+            message: format!("Failed to lock table: {}", e),
+        })?;
 
         let table_ty = table.ty(&caller.as_context_mut());
         let element_type =
@@ -430,7 +459,15 @@ pub extern "C" fn wasmtime4j_panama_caller_set_table_element(
         use wasmtime::AsContextMut;
 
         let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
-        let table = unsafe { *(table_ptr as *const wasmtime::Table) };
+        // F-Wasmtime4j-Panama-Table-From-Caller-Wrapper-Fix follow-up
+        // (2026-07-28): parallel to caller_grow_table — table_ptr is now
+        // a *const crate::table::Table wrapper. Extract inner via lock.
+        let table_wrapper =
+            unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
+        let inner_arc = table_wrapper.wasmtime_table();
+        let table = *inner_arc.lock().map_err(|e| crate::error::WasmtimeError::Concurrency {
+            message: format!("Failed to lock table: {}", e),
+        })?;
 
         let table_ty = table.ty(&caller.as_context_mut());
         let element_type =

@@ -1268,6 +1268,31 @@ impl Table {
         })
     }
 
+    /// Create a Table wrapper from an existing wasmtime::Table using a
+    /// wasmtime context directly (as opposed to a &crate::store::Store).
+    /// Introduced 2026-07-28 to wrap tables returned from
+    /// `wasmtime_panama_caller_get_table` where only a caller context is
+    /// available, mirroring `crate::memory::Memory::from_wasmtime_memory`.
+    pub fn from_wasmtime_table_with_context<T>(
+        wasmtime_table: WasmtimeTable,
+        ctx: impl wasmtime::AsContext<Data = T>,
+        name: Option<String>,
+    ) -> Self {
+        let table_type = wasmtime_table.ty(&ctx);
+        let is_64 = table_type.is_64();
+        let metadata = TableMetadata {
+            element_type: ValType::Ref(table_type.element().clone()),
+            initial_size: table_type.minimum(),
+            maximum_size: table_type.maximum(),
+            name,
+            is_64,
+        };
+        Table {
+            inner: Arc::new(Mutex::new(wasmtime_table)),
+            metadata,
+        }
+    }
+
     /// Get the underlying wasmtime::Table (for internal use)
     pub fn wasmtime_table(&self) -> Arc<Mutex<WasmtimeTable>> {
         Arc::clone(&self.inner)

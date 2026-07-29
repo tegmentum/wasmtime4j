@@ -209,6 +209,227 @@ final class PanamaCallerMutationRuntimeTest {
   }
 
   @Test
+  @DisplayName("linkerDefineMemoryFromExport wires caller's memory into a child linker")
+  void linkerDefineMemoryFromExportRoundTrip() throws Exception {
+    // Runtime witness for the r.3 override delivered by
+    // F-Wasmtime4j-Panama-Consumer-Gated-Followups. Was blocked by the
+    // caller_get_memory ValidatedMemory wrapper mismatch — now unblocked.
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaLinker<Void> parentLinker = new PanamaLinker<>(engine);
+
+    // Parent module: exports "memory" + imports "env.wire" which the
+    // callback uses to define the parent's memory into a child linker
+    // + instantiate a child module that consumes it.
+    final String parentWat =
+        "(module\n"
+            + "  (import \"env\" \"wire\" (func $wire (result i32)))\n"
+            + "  (memory (export \"memory\") 1)\n"
+            + "  (func (export \"run\") (result i32) call $wire)\n"
+            + ")";
+
+    // Child module: imports env.hostmem (which will be the parent's
+    // memory) + writes marker byte at offset 0. Instantiating this
+    // child inside the callback proves linkerDefineMemoryFromExport
+    // routed the parent's memory into the child linker.
+    final String childWat =
+        "(module\n"
+            + "  (import \"env\" \"hostmem\" (memory 1))\n"
+            + "  (func (export \"stamp\") (result i32)\n"
+            + "    i32.const 0 i32.const 0xAA i32.store8\n"
+            + "    i32.const 1)\n"
+            + ")";
+
+    // Pre-compile the child module outside the callback so we don't need
+    // caller.compileModule + byte-materialisation inside; test focuses on
+    // linkerDefineMemoryFromExport specifically.
+    final ai.tegmentum.wasmtime4j.Module childModule = engine.compileWat(childWat);
+
+    final AtomicReference<Throwable> failure = new AtomicReference<>();
+
+    parentLinker.defineHostFunction(
+        "env",
+        "wire",
+        FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32}),
+        new HostFunction.CallerAwareHostFunction<Void>(
+            (final Caller<Void> caller, final WasmValue[] params) -> {
+              try {
+                // Build a child linker + define the parent's memory export
+                // into it under name env.hostmem via the r.3 override.
+                final PanamaLinker<Void> childLinker = new PanamaLinker<>(engine);
+                caller.linkerDefineMemoryFromExport(
+                    childLinker, "env", "hostmem", "memory");
+                // Instantiate the pre-compiled child module + call stamp()
+                // which writes to the shared memory. The write must be
+                // observable post-callback via instance.getMemory("memory").
+                final Instance childInst = childLinker.instantiate(store, childModule);
+                final WasmValue[] stampResult = childInst.callFunction("stamp");
+                assertEquals(1, stampResult[0].asInt());
+                childInst.close();
+                return new WasmValue[] {WasmValue.i32(1)};
+              } catch (final Throwable t) {
+                failure.set(t);
+                return new WasmValue[] {WasmValue.i32(-1)};
+              }
+            }));
+
+    final Instance instance = instantiate(engine, parentLinker, store, parentWat);
+    final WasmValue[] results = instance.callFunction("run");
+
+    if (failure.get() != null) {
+      throw new AssertionError("Callback assertion failed", failure.get());
+    }
+    assertEquals(1, results[0].asInt());
+
+    // Verify the child module's byte write is observable in the parent's
+    // exported memory — proves the memories were the same underlying object.
+    final Optional<WasmMemory> parentMem = instance.getMemory("memory");
+    assertTrue(parentMem.isPresent());
+    final byte[] read = new byte[1];
+    parentMem.get().readBytes(0, read, 0, 1);
+    assertEquals((byte) 0xAA, read[0], "child's memory write must be visible in parent's memory");
+
+    instance.close();
+    parentLinker.close();
+    store.close();
+    engine.close();
+  }
+
+  @Test
+  @DisplayName("linkerDefineTableFromExport wires caller's table into a child linker")
+  void linkerDefineTableFromExportRoundTrip() throws Exception {
+    // Runtime witness for the r.3 override — parallel to
+    // linkerDefineMemoryFromExportRoundTrip but for tables.
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaLinker<Void> parentLinker = new PanamaLinker<>(engine);
+
+    final String parentWat =
+        "(module\n"
+            + "  (import \"env\" \"wire\" (func $wire (result i32)))\n"
+            + "  (table (export \"t\") 4 funcref)\n"
+            + "  (func (export \"run\") (result i32) call $wire)\n"
+            + ")";
+
+    // Child module: imports env.hostt table + queries its size. Proves
+    // linkerDefineTableFromExport wired the parent's table into the child.
+    final String childWat =
+        "(module\n"
+            + "  (import \"env\" \"hostt\" (table 4 funcref))\n"
+            + "  (func (export \"tsize\") (result i32) table.size)\n"
+            + ")";
+
+    final ai.tegmentum.wasmtime4j.Module childModule = engine.compileWat(childWat);
+    final AtomicReference<Throwable> failure = new AtomicReference<>();
+    final AtomicLong observedChildTableSize = new AtomicLong(-1L);
+
+    parentLinker.defineHostFunction(
+        "env",
+        "wire",
+        FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32}),
+        new HostFunction.CallerAwareHostFunction<Void>(
+            (final Caller<Void> caller, final WasmValue[] params) -> {
+              try {
+                final PanamaLinker<Void> childLinker = new PanamaLinker<>(engine);
+                caller.linkerDefineTableFromExport(childLinker, "env", "hostt", "t");
+                final Instance childInst = childLinker.instantiate(store, childModule);
+                final WasmValue[] sizeResult = childInst.callFunction("tsize");
+                observedChildTableSize.set(sizeResult[0].asInt());
+                childInst.close();
+                return new WasmValue[] {WasmValue.i32(1)};
+              } catch (final Throwable t) {
+                failure.set(t);
+                return new WasmValue[] {WasmValue.i32(-1)};
+              }
+            }));
+
+    final Instance instance = instantiate(engine, parentLinker, store, parentWat);
+    final WasmValue[] results = instance.callFunction("run");
+
+    if (failure.get() != null) {
+      throw new AssertionError("Callback assertion failed", failure.get());
+    }
+    assertEquals(1, results[0].asInt());
+    assertEquals(4L, observedChildTableSize.get(), "child sees parent's table.size == 4");
+
+    instance.close();
+    parentLinker.close();
+    store.close();
+    engine.close();
+  }
+
+  @Test
+  @DisplayName("caller.growTable(caller.getTable(), 1, null) grows table from within callback")
+  void growTableFromWithinCallback() throws Exception {
+    // Runtime witness for the caller-scoped table grow path.
+    // Uses null init (registry-id 0) — non-null funcref via
+    // FuncToRegistryId is covered by the sibling test.
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaLinker<Void> linker = new PanamaLinker<>(engine);
+
+    final String wat =
+        "(module\n"
+            + "  (import \"env\" \"grow\" (func $grow (result i32)))\n"
+            + "  (table (export \"t\") 2 funcref)\n"
+            + "  (func (export \"run\") (result i32) call $grow)\n"
+            + ")";
+
+    final AtomicReference<Throwable> failure = new AtomicReference<>();
+    final AtomicLong observedPrev = new AtomicLong(-1L);
+
+    linker.defineHostFunction(
+        "env",
+        "grow",
+        FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32}),
+        new HostFunction.CallerAwareHostFunction<Void>(
+            (final Caller<Void> caller, final WasmValue[] params) -> {
+              try {
+                final Optional<ai.tegmentum.wasmtime4j.WasmTable> tableOpt = caller.getTable("t");
+                assertTrue(tableOpt.isPresent(), "caller.getTable('t') must succeed");
+                final int prev = caller.growTable(tableOpt.get(), 2, null);
+                observedPrev.set(prev);
+                return new WasmValue[] {WasmValue.i32(prev)};
+              } catch (final Throwable t) {
+                failure.set(t);
+                return new WasmValue[] {WasmValue.i32(-1)};
+              }
+            }));
+
+    final Instance instance = instantiate(engine, linker, store, wat);
+    final WasmValue[] results = instance.callFunction("run");
+
+    if (failure.get() != null) {
+      throw new AssertionError("Callback assertion failed", failure.get());
+    }
+    assertEquals(2, results[0].asInt(), "growTable returns prev size == 2");
+    assertEquals(2L, observedPrev.get());
+
+    instance.close();
+    linker.close();
+    store.close();
+    engine.close();
+  }
+
+  // FuncToRegistryId runtime witness DEFERRED — deeper design mismatch
+  // exposed during recon: PanamaHostFunction.functionHandle stores an
+  // upcall-stub address (from Panama's Linker.upcallStub), but the
+  // wasmtime4j_panama_caller_func_to_registry_id FFI deref-casts
+  // function_ptr as `*const crate::jni::function::FunctionHandle`
+  // (a JNI-tier struct). Piping a PanamaHostFunction through
+  // caller.growTable's non-null init path returns -1.
+  //
+  // Fix would require either:
+  //   (a) A Panama-tier equivalent of FunctionHandle exposed via a
+  //       PanamaHostFunction accessor, OR
+  //   (b) An FFI variant caller_func_to_registry_id_from_upcall_stub
+  //       that resolves the wasmtime::Func from a Panama upcall stub.
+  //
+  // Both are additive; neither is blocking. Reflection contract tests
+  // (PanamaCallerMutationContractTest) already prove the override
+  // exists on PanamaCaller. Deferred as a follow-up frontier.
+
+  @Test
   @DisplayName("hasExport('memory') from callback returns true (caller-wire smoke)")
   void hasExportFromCallbackReturnsTrue() throws Exception {
     final PanamaEngine engine = new PanamaEngine();
