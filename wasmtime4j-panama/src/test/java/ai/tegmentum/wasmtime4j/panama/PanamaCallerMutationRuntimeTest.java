@@ -142,6 +142,73 @@ final class PanamaCallerMutationRuntimeTest {
   }
 
   @Test
+  @DisplayName("caller.growMemory(caller.getMemory('memory'), 1) grows memory from within callback")
+  void growMemoryFromWithinCallback() throws Exception {
+    // Follow-up to F-Wasmtime4j-Panama-Memory-From-Caller-Wrapper-Fix:
+    // exercises the caller-aware mutation path (caller.growMemory) from
+    // WITHIN a callback frame, using the freshly-obtained PanamaMemory
+    // from caller.getMemory. Proves:
+    //   1. caller.getMemory returns a PanamaMemory whose nativeMemory
+    //      ptr is a *const ValidatedMemory (r.4 fix).
+    //   2. caller.growMemory extracts the inner wasmtime::Memory from
+    //      that ValidatedMemory ptr (r.4 follow-up alignment of
+    //      wasmtime4j_panama_caller_grow_memory) and uses
+    //      caller.as_context_mut() — no store re-entrancy issue.
+    //   3. Grow effect is observable post-callback via instance.getMemory.
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaLinker<Void> linker = new PanamaLinker<>(engine);
+
+    final String wat =
+        "(module\n"
+            + "  (import \"env\" \"grow\" (func $grow (result i32)))\n"
+            + "  (memory (export \"memory\") 1)\n"
+            + "  (func (export \"run\") (result i32) call $grow)\n"
+            + ")";
+
+    final AtomicReference<Throwable> failure = new AtomicReference<>();
+    final AtomicLong observedPrev = new AtomicLong(-1L);
+
+    linker.defineHostFunction(
+        "env",
+        "grow",
+        FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32}),
+        new HostFunction.CallerAwareHostFunction<Void>(
+            (final Caller<Void> caller, final WasmValue[] params) -> {
+              try {
+                final Optional<WasmMemory> memOpt = caller.getMemory("memory");
+                assertTrue(memOpt.isPresent(), "caller.getMemory('memory') must succeed");
+                // Grow via the caller-aware path — no store re-entrancy.
+                final long prev = caller.growMemory(memOpt.get(), 1L);
+                observedPrev.set(prev);
+                return new WasmValue[] {WasmValue.i32((int) prev)};
+              } catch (final Throwable t) {
+                failure.set(t);
+                return new WasmValue[] {WasmValue.i32(-1)};
+              }
+            }));
+
+    final Instance instance = instantiate(engine, linker, store, wat);
+    final WasmValue[] results = instance.callFunction("run");
+
+    if (failure.get() != null) {
+      throw new AssertionError("Callback assertion failed", failure.get());
+    }
+    assertEquals(1, results[0].asInt(), "callback returns prev pages = 1");
+    assertEquals(1L, observedPrev.get(), "growMemory prev pages == 1");
+
+    // Post-callback verification: memory is observably 2 pages.
+    final Optional<WasmMemory> instanceMem = instance.getMemory("memory");
+    assertTrue(instanceMem.isPresent());
+    assertEquals(2L, instanceMem.get().size(), "post-callback memory size == 2 pages");
+
+    instance.close();
+    linker.close();
+    store.close();
+    engine.close();
+  }
+
+  @Test
   @DisplayName("hasExport('memory') from callback returns true (caller-wire smoke)")
   void hasExportFromCallbackReturnsTrue() throws Exception {
     final PanamaEngine engine = new PanamaEngine();

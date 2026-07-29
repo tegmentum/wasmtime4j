@@ -478,9 +478,21 @@ pub extern "C" fn wasmtime4j_panama_caller_grow_memory(
         use wasmtime::AsContextMut;
 
         let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
-        let memory = unsafe { *(memory_ptr as *const wasmtime::Memory) };
+        // F-Wasmtime4j-Panama-Memory-From-Caller-Wrapper-Fix follow-up
+        // (2026-07-28): memory_ptr is now a *const ValidatedMemory per
+        // the sibling `caller_get_memory` r.4 fix — extract the inner
+        // wasmtime::Memory via `get_memory_ref`. Prior code deref-cast
+        // as raw `wasmtime::Memory`, misinterpreting the wrapper's
+        // magic-check field as the memory handle.
+        let memory_wrapper =
+            unsafe { crate::memory::core::get_memory_ref(memory_ptr as *const c_void)? };
+        let wasmtime_memory = memory_wrapper.inner().copied().ok_or_else(|| {
+            crate::error::WasmtimeError::Memory {
+                message: "Caller-scoped grow requires regular (non-shared) memory".to_string(),
+            }
+        })?;
 
-        let prev_pages = memory
+        let prev_pages = wasmtime_memory
             .grow(&mut caller.as_context_mut(), delta_pages as u64)
             .map_err(|e| crate::error::WasmtimeError::Memory {
                 message: format!("Caller-scoped memory grow failed: {}", e),
