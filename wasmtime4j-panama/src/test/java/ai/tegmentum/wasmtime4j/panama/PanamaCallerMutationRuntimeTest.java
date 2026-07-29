@@ -412,6 +412,82 @@ final class PanamaCallerMutationRuntimeTest {
   }
 
   @Test
+  @DisplayName("caller.growTable with PanamaCallerFunction init exercises caller_func_ptr_to_registry_id")
+  void growTableWithCallerFunctionInitExercisesFuncPtrFFI() throws Exception {
+    // Runtime witness for the PanamaCallerFunction branch of the
+    // FuncToRegistryId fix (2026-07-29). PanamaCallerFunction is
+    // obtained via `caller.getFunction(name)` — its `funcHandle` is a
+    // `*const wasmtime::Func` (produced by
+    // wasmtime4j_panama_caller_get_function which boxes a raw
+    // wasmtime::Func). Growing a funcref table with this as init
+    // routes through the new
+    // `wasmtime4j_panama_caller_func_ptr_to_registry_id` FFI which
+    // deref-casts function_ptr as `*const wasmtime::Func` (matching
+    // shape). Sibling test growTableWithFuncrefInitExercisesFuncTo-
+    // RegistryId covers the PanamaHostFunction path (uses cached
+    // funcRefId, no FFI call).
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaLinker<Void> linker = new PanamaLinker<>(engine);
+
+    // Parent module: exports a function that returns 42 + a funcref
+    // table. The callback obtains the exported function via
+    // caller.getFunction("get42") — that's a PanamaCallerFunction —
+    // and passes it as init to growTable.
+    final String wat =
+        "(module\n"
+            + "  (import \"env\" \"grow\" (func $grow (result i32)))\n"
+            + "  (table (export \"t\") 1 funcref)\n"
+            + "  (func (export \"get42\") (result i32) i32.const 42)\n"
+            + "  (func (export \"run\") (result i32) call $grow)\n"
+            + ")";
+
+    final AtomicReference<Throwable> failure = new AtomicReference<>();
+    final AtomicLong observedPrev = new AtomicLong(-1L);
+
+    linker.defineHostFunction(
+        "env",
+        "grow",
+        FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32}),
+        new HostFunction.CallerAwareHostFunction<Void>(
+            (final Caller<Void> caller, final WasmValue[] params) -> {
+              try {
+                final Optional<ai.tegmentum.wasmtime4j.WasmFunction> fnOpt =
+                    caller.getFunction("get42");
+                assertTrue(fnOpt.isPresent(), "caller.getFunction('get42') must succeed");
+                assertTrue(
+                    fnOpt.get() instanceof PanamaCallerFunction,
+                    "caller.getFunction must return a PanamaCallerFunction, got "
+                        + fnOpt.get().getClass().getName());
+                final Optional<ai.tegmentum.wasmtime4j.WasmTable> tableOpt = caller.getTable("t");
+                assertTrue(tableOpt.isPresent());
+                // Non-null PanamaCallerFunction init: exercises the new
+                // caller_func_ptr_to_registry_id FFI wire.
+                final int prev = caller.growTable(tableOpt.get(), 1, fnOpt.get());
+                observedPrev.set(prev);
+                return new WasmValue[] {WasmValue.i32(prev)};
+              } catch (final Throwable t) {
+                failure.set(t);
+                return new WasmValue[] {WasmValue.i32(-1)};
+              }
+            }));
+
+    final Instance instance = instantiate(engine, linker, store, wat);
+    final WasmValue[] results = instance.callFunction("run");
+
+    if (failure.get() != null) {
+      throw new AssertionError("Callback assertion failed", failure.get());
+    }
+    assertEquals(1, results[0].asInt(), "growTable returns prev size == 1");
+    assertEquals(1L, observedPrev.get());
+
+    instance.close();
+    linker.close();
+    store.close();
+    engine.close();
+  }
+
+  @Test
   @DisplayName("caller.growTable with non-null PanamaHostFunction init exercises FuncToRegistryId")
   void growTableWithFuncrefInitExercisesFuncToRegistryId() throws Exception {
     // Runtime witness for the FuncToRegistryId path added in
