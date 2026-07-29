@@ -160,18 +160,35 @@ pub extern "C" fn wasmtime4j_panama_caller_get_memory(
     // F-Wasmtime4j-Panama-Callback-Caller-Wire r.4 (2026-07-28): aligned
     // return convention with `wasmtime4j_panama_caller_get_function` /
     // `_get_table` / `_get_global` — 0 for both success (out-ptr populated)
-    // AND not-found (out-ptr set null). This was previously a per-FFI
-    // divergence (get_memory alone returned 1 for success) that stayed
-    // hidden while the callback wire fed store-address instead of a real
-    // caller pointer; the caller-wire arc's positive-path harness surfaced
-    // it as caller.getMemory returning empty for an actually-present
-    // export.
+    // AND not-found (out-ptr set null).
+    //
+    // F-Wasmtime4j-Panama-Memory-From-Caller-Wrapper-Fix (2026-07-28):
+    // wrap the returned Memory in a `ValidatedMemory` via
+    // `crate::memory::core::create_validated_memory`. Downstream
+    // consumers (`wasmtime4j_panama_memory_size_pages` /
+    // `_size_bytes` / `_grow`) dereference the ptr as
+    // `*const ValidatedMemory` (see memory/core.rs:257 `get_memory_ref`).
+    // Prior code boxed a raw `wasmtime::Memory`, so downstream size/grow
+    // calls hit UB on the magic-check field. The sibling `get_table` /
+    // `_get_global` FFIs don't have this bug because their downstream
+    // getters accept raw `wasmtime::{Table,Global}` (no wrapper).
     match core::caller_get_memory(caller, name_str) {
-        Ok(Some(memory)) => {
-            unsafe {
-                *memory_out = Box::into_raw(Box::new(memory)) as *mut c_void;
+        Ok(Some(wasmtime_memory)) => {
+            // Query the memory type from the caller's context so the
+            // wrapper carries the correct min/max/is_64/is_shared flags.
+            use wasmtime::AsContextMut;
+            let memory_type = wasmtime_memory.ty(&caller.as_context_mut());
+            let wrapped =
+                crate::memory::Memory::from_wasmtime_memory(wasmtime_memory, memory_type);
+            match crate::memory::core::create_validated_memory(wrapped) {
+                Ok(validated_ptr) => {
+                    unsafe {
+                        *memory_out = validated_ptr as *mut c_void;
+                    }
+                    0 // Memory found
+                }
+                Err(_) => -1,
             }
-            0 // Memory found
         }
         Ok(None) => {
             unsafe {

@@ -63,6 +63,85 @@ final class PanamaCallerMutationRuntimeTest {
   }
 
   @Test
+  @DisplayName("getMemory('memory') from callback returns valid PanamaMemory (validated-wrapper fix)")
+  void getMemoryFromCallbackReturnsValidatedMemory() throws Exception {
+    // F-Wasmtime4j-Panama-Memory-From-Caller-Wrapper-Fix (2026-07-28):
+    // wasmtime4j_panama_caller_get_memory previously boxed a raw
+    // wasmtime::Memory, but downstream panamaMemorySize* / Grow FFIs
+    // deref-cast the ptr as *const ValidatedMemory (see memory/core.rs).
+    // Fix wraps the returned Memory in Memory::from_wasmtime_memory +
+    // create_validated_memory before boxing. This test proves the fix
+    // by calling .size() and .grow() on the returned PanamaMemory
+    // (both route through panamaMemorySizePages / panamaMemoryGrow).
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaLinker<Void> linker = new PanamaLinker<>(engine);
+
+    final String wat =
+        "(module\n"
+            + "  (import \"env\" \"probe\" (func $probe (result i32)))\n"
+            + "  (memory (export \"memory\") 1)\n"
+            + "  (func (export \"run\") (result i32) call $probe)\n"
+            + ")";
+
+    final AtomicReference<Throwable> failure = new AtomicReference<>();
+    final AtomicReference<WasmMemory> capturedMemory = new AtomicReference<>();
+
+    linker.defineHostFunction(
+        "env",
+        "probe",
+        FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32}),
+        new HostFunction.CallerAwareHostFunction<Void>(
+            (final Caller<Void> caller, final WasmValue[] params) -> {
+              try {
+                // Under fix: caller.getMemory returns a valid PanamaMemory
+                // wrapping the caller's memory as a ValidatedMemory ptr.
+                // Note: calling .size() / .grow() from within the callback
+                // would hit wasmtime's store re-entrancy check; for callback-
+                // scoped mutation use caller.growMemory(...). This test
+                // instead captures the returned PanamaMemory and verifies
+                // .size() / .grow() work AFTER callback return, which
+                // exercises the ValidatedMemory wrapper end-to-end.
+                final Optional<WasmMemory> memOpt = caller.getMemory("memory");
+                assertTrue(memOpt.isPresent(), "caller.getMemory('memory') must succeed post-fix");
+                capturedMemory.set(memOpt.get());
+                return new WasmValue[] {WasmValue.i32(1)};
+              } catch (final Throwable t) {
+                failure.set(t);
+                return new WasmValue[] {WasmValue.i32(-1)};
+              }
+            }));
+
+    final Instance instance = instantiate(engine, linker, store, wat);
+    final WasmValue[] results = instance.callFunction("run");
+
+    if (failure.get() != null) {
+      throw new AssertionError("Callback assertion failed", failure.get());
+    }
+    assertEquals(1, results[0].asInt());
+
+    // Post-callback: exercise size + grow on the captured PanamaMemory.
+    // This routes through panamaMemorySizePages / panamaMemoryGrow which
+    // deref the ptr as *const ValidatedMemory — the fix's core validation.
+    final WasmMemory captured = capturedMemory.get();
+    assertNotNull(captured, "captured memory must survive callback exit");
+    assertEquals(1, captured.size(), "initial memory size == 1 page");
+    final int prev = captured.grow(1);
+    assertEquals(1, prev, "grow(1) returns previous size == 1");
+    assertEquals(2, captured.size(), "post-grow memory size == 2 pages");
+
+    // Independent verification via instance.getMemory: same underlying memory.
+    final Optional<WasmMemory> instanceMem = instance.getMemory("memory");
+    assertTrue(instanceMem.isPresent());
+    assertEquals(2L, instanceMem.get().size(), "instance sees the same grown memory");
+
+    instance.close();
+    linker.close();
+    store.close();
+    engine.close();
+  }
+
+  @Test
   @DisplayName("hasExport('memory') from callback returns true (caller-wire smoke)")
   void hasExportFromCallbackReturnsTrue() throws Exception {
     final PanamaEngine engine = new PanamaEngine();
