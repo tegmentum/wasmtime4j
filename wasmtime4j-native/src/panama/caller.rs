@@ -946,6 +946,36 @@ pub extern "C" fn wasmtime4j_panama_caller_func_to_registry_id(
     })
 }
 
+/// F-Wasmtime4j-Panama-FuncToRegistryId-Wire-Alignment (2026-07-29) —
+/// Panama-side sibling to `wasmtime4j_panama_caller_func_to_registry_id`.
+///
+/// Takes a `*const wasmtime::Func` (the shape `PanamaCallerFunction`
+/// carries — produced by `wasmtime4j_panama_caller_get_function`), NOT
+/// a `*const crate::jni::function::FunctionHandle`. Registers the func
+/// into REFERENCE_REGISTRY under the caller's store_id and returns the
+/// registry id.
+///
+/// Convention matches the sibling: 0 on null-arg (registry-id 0 == null
+/// funcref sentinel), positive registry id on success.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_func_ptr_to_registry_id(
+    caller_ptr: *mut c_void,
+    function_ptr: *mut c_void,
+) -> i64 {
+    if caller_ptr.is_null() || function_ptr.is_null() {
+        return 0;
+    }
+    ffi_utils::ffi_try_code_i64(|| {
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        let store_id = caller.data().store_id;
+        // Panama-tier funcHandle is a raw wasmtime::Func boxed by
+        // wasmtime4j_panama_caller_get_function. wasmtime::Func is Copy.
+        let func = unsafe { *(function_ptr as *const wasmtime::Func) };
+        let id = crate::table::core::register_function_reference(func, store_id)?;
+        Ok(id as i64)
+    })
+}
+
 /// Define a memory extern into a Linker by looking it up on the caller by
 /// export name. Mirrors JNI's `nativeCallerLinkerDefineMemoryFromExport`
 /// (`wasmtime4j-native/src/jni/caller.rs:860`). Preferable to

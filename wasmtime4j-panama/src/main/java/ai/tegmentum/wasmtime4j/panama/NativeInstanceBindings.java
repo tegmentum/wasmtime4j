@@ -1383,6 +1383,27 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
+   * F-Wasmtime4j-Panama-FuncToRegistryId-Wire-Alignment (2026-07-29) —
+   * Panama-side sibling of {@link #callerFuncToRegistryId} that accepts
+   * a raw {@code wasmtime::Func} ptr (the shape
+   * {@link PanamaCallerFunction}'s {@code funcHandle} carries — produced
+   * by {@code wasmtime4j_panama_caller_get_function}) instead of a
+   * {@code crate::jni::function::FunctionHandle} JNI-tier struct.
+   *
+   * <p>Returns 0 on null args (registry-id 0 == null funcref sentinel),
+   * positive registry id on success.
+   *
+   * @since 1.5.3
+   */
+  public long callerFuncPtrToRegistryId(
+      final MemorySegment callerPtr, final MemorySegment functionPtr) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(functionPtr, "functionPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_func_ptr_to_registry_id", Long.class, callerPtr, functionPtr);
+  }
+
+  /**
    * Define a memory extern into a Linker by looking it up on the caller by
    * export name — avoids the api-layer registry-handle roundtrip.
    *
@@ -2733,6 +2754,13 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
             ValueLayout.JAVA_LONG,
             ValueLayout.ADDRESS, // caller_ptr
             ValueLayout.ADDRESS)); // function_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_func_ptr_to_registry_id",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS, // caller_ptr
+            ValueLayout.ADDRESS)); // function_ptr (wasmtime::Func)
 
     addFunctionBinding(
         "wasmtime4j_panama_caller_linker_define_memory_from_export",

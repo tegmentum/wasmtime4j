@@ -836,31 +836,57 @@ final class PanamaCaller<T> implements Caller<T> {
     if (value == null) {
       return 0L;
     }
-    final MemorySegment funcPtr;
+    // F-Wasmtime4j-Panama-FuncToRegistryId-Wire-Alignment (2026-07-29):
+    // PanamaHostFunction and PanamaCallerFunction hold different underlying
+    // native shapes than the JNI-tier `FunctionHandle` struct that
+    // `wasmtime4j_panama_caller_func_to_registry_id` originally expected.
+    // Route each Panama function tier through the ptr shape its native side
+    // actually produces.
+    //
+    // - PanamaHostFunction registers itself into the native REFERENCE_REGISTRY
+    //   at construction (via `panamaStoreCreateHostFunction`); the resulting
+    //   `funcRefId` IS the registry id we need. Use it directly — no FFI
+    //   call, no wrapper mismatch.
+    // - PanamaCallerFunction's `funcHandle` is a `*const wasmtime::Func`
+    //   (produced by `wasmtime4j_panama_caller_get_function` which boxes
+    //   a raw `wasmtime::Func`). Route through the new caller-scoped
+    //   FFI `callerFuncPtrToRegistryId` which registers it into
+    //   REFERENCE_REGISTRY under the caller's store_id.
+    if (value instanceof PanamaHostFunction phf) {
+      final long funcRefId = phf.getFuncRefId();
+      if (funcRefId == 0L) {
+        throw new WasmException(
+            "PanamaCaller."
+                + opName
+                + ": PanamaHostFunction has funcRefId == 0 (not registered "
+                + "in native reference registry — likely constructed on a "
+                + "store without a live native binding)");
+      }
+      return funcRefId;
+    }
     if (value instanceof PanamaCallerFunction pcf) {
-      funcPtr = pcf.getFuncHandle();
-    } else if (value instanceof PanamaHostFunction phf) {
-      funcPtr = phf.getFunctionHandle();
-    } else {
-      throw new IllegalArgumentException(
-          "PanamaCaller."
-              + opName
-              + ": non-null init/value must be a PanamaCallerFunction or "
-              + "PanamaHostFunction. PanamaFunction (name-dispatch) has no "
-              + "direct native handle — materialize it via a caller export lookup "
-              + "first. Passed value type: "
-              + value.getClass().getName());
+      final MemorySegment funcPtr = pcf.getFuncHandle();
+      if (funcPtr == null || funcPtr.equals(MemorySegment.NULL) || funcPtr.address() == 0) {
+        throw new WasmException(
+            "PanamaCaller." + opName + ": PanamaCallerFunction has null funcHandle");
+      }
+      final long id = bindings.callerFuncPtrToRegistryId(callerPtr, funcPtr);
+      if (id == 0L) {
+        throw new WasmException(
+            "PanamaCaller."
+                + opName
+                + ": PanamaCallerFunction could not be registered into REFERENCE_REGISTRY");
+      }
+      return id;
     }
-    if (funcPtr == null || funcPtr.equals(MemorySegment.NULL) || funcPtr.address() == 0) {
-      throw new WasmException(
-          "PanamaCaller." + opName + ": function handle is null or zero");
-    }
-    final long id = bindings.callerFuncToRegistryId(callerPtr, funcPtr);
-    if (id == 0L) {
-      throw new WasmException(
-          "PanamaCaller." + opName + ": could not register function into REFERENCE_REGISTRY");
-    }
-    return id;
+    throw new IllegalArgumentException(
+        "PanamaCaller."
+            + opName
+            + ": non-null init/value must be a PanamaCallerFunction or "
+            + "PanamaHostFunction. PanamaFunction (name-dispatch) has no "
+            + "direct native handle — materialize it via a caller export lookup "
+            + "first. Passed value type: "
+            + value.getClass().getName());
   }
 
   @Override

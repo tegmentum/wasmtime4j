@@ -411,23 +411,76 @@ final class PanamaCallerMutationRuntimeTest {
     engine.close();
   }
 
-  // FuncToRegistryId runtime witness DEFERRED — deeper design mismatch
-  // exposed during recon: PanamaHostFunction.functionHandle stores an
-  // upcall-stub address (from Panama's Linker.upcallStub), but the
-  // wasmtime4j_panama_caller_func_to_registry_id FFI deref-casts
-  // function_ptr as `*const crate::jni::function::FunctionHandle`
-  // (a JNI-tier struct). Piping a PanamaHostFunction through
-  // caller.growTable's non-null init path returns -1.
-  //
-  // Fix would require either:
-  //   (a) A Panama-tier equivalent of FunctionHandle exposed via a
-  //       PanamaHostFunction accessor, OR
-  //   (b) An FFI variant caller_func_to_registry_id_from_upcall_stub
-  //       that resolves the wasmtime::Func from a Panama upcall stub.
-  //
-  // Both are additive; neither is blocking. Reflection contract tests
-  // (PanamaCallerMutationContractTest) already prove the override
-  // exists on PanamaCaller. Deferred as a follow-up frontier.
+  @Test
+  @DisplayName("caller.growTable with non-null PanamaHostFunction init exercises FuncToRegistryId")
+  void growTableWithFuncrefInitExercisesFuncToRegistryId() throws Exception {
+    // Runtime witness for the FuncToRegistryId path added in
+    // F-Wasmtime4j-Panama-Consumer-Gated-Followups r.2, initially
+    // documented as DEFERRED in cd872082 because PanamaHostFunction's
+    // functionHandle stores an upcall-stub address (not a
+    // *const crate::jni::function::FunctionHandle). Fixed by
+    // F-Wasmtime4j-Panama-FuncToRegistryId-Wire-Alignment (2026-07-29):
+    // PanamaCaller.resolveRefIdForMutation now routes PanamaHostFunction
+    // through its already-cached `funcRefId` (registered at
+    // registerInNativeRegistry), and PanamaCallerFunction through a new
+    // Panama-specific FFI `callerFuncPtrToRegistryId` that accepts a
+    // *const wasmtime::Func directly.
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaLinker<Void> linker = new PanamaLinker<>(engine);
+
+    final String wat =
+        "(module\n"
+            + "  (import \"env\" \"grow\" (func $grow (result i32)))\n"
+            + "  (table (export \"t\") 1 funcref)\n"
+            + "  (func (export \"run\") (result i32) call $grow)\n"
+            + ")";
+
+    // Build a PanamaHostFunction via createHostFunction; its funcRefId
+    // is registered into the native REFERENCE_REGISTRY at construction.
+    final ai.tegmentum.wasmtime4j.WasmFunction initFn =
+        store.createHostFunction(
+            "init_marker",
+            FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32}),
+            (params) -> new WasmValue[] {WasmValue.i32(42)});
+
+    final AtomicReference<Throwable> failure = new AtomicReference<>();
+    final AtomicLong observedPrev = new AtomicLong(-1L);
+
+    linker.defineHostFunction(
+        "env",
+        "grow",
+        FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32}),
+        new HostFunction.CallerAwareHostFunction<Void>(
+            (final Caller<Void> caller, final WasmValue[] params) -> {
+              try {
+                final Optional<ai.tegmentum.wasmtime4j.WasmTable> tableOpt = caller.getTable("t");
+                assertTrue(tableOpt.isPresent());
+                // Non-null init: exercises FuncToRegistryId path via
+                // PanamaHostFunction.getFuncRefId — no wrapper FFI needed.
+                final int prev = caller.growTable(tableOpt.get(), 2, initFn);
+                observedPrev.set(prev);
+                return new WasmValue[] {WasmValue.i32(prev)};
+              } catch (final Throwable t) {
+                failure.set(t);
+                return new WasmValue[] {WasmValue.i32(-1)};
+              }
+            }));
+
+    final Instance instance = instantiate(engine, linker, store, wat);
+    final WasmValue[] results = instance.callFunction("run");
+
+    if (failure.get() != null) {
+      throw new AssertionError("Callback assertion failed", failure.get());
+    }
+    assertEquals(1, results[0].asInt(), "growTable(funcref-init) returns prev size == 1");
+    assertEquals(1L, observedPrev.get());
+
+    instance.close();
+    linker.close();
+    store.close();
+    engine.close();
+  }
 
   @Test
   @DisplayName("hasExport('memory') from callback returns true (caller-wire smoke)")
