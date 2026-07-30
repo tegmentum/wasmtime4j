@@ -444,9 +444,10 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         "wasmtime4j_component_linker_instantiate",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // enhanced component engine pointer
             ValueLayout.ADDRESS, // linker pointer
             ValueLayout.ADDRESS, // component pointer
-            ValueLayout.ADDRESS)); // instance out pointer
+            ValueLayout.ADDRESS)); // u64* instance_id_out
 
     // ===== Resource Definition =====
     addFunctionBinding(
@@ -582,13 +583,15 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         "wasmtime4j_component_instance_pre_instantiate",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // enhanced component engine pointer
             ValueLayout.ADDRESS, // pre handle
-            ValueLayout.ADDRESS)); // instance out pointer
+            ValueLayout.ADDRESS)); // u64* instance_id_out
 
     addFunctionBinding(
         "wasmtime4j_component_instance_pre_instantiate_with_config",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // enhanced component engine pointer
             ValueLayout.ADDRESS, // pre handle
             ValueLayout.JAVA_LONG, // fuel limit
             ValueLayout.JAVA_LONG, // epoch deadline
@@ -598,7 +601,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.JAVA_LONG, // max tables
             ValueLayout.JAVA_LONG, // max memories
             ValueLayout.JAVA_BYTE, // trap on grow failure
-            ValueLayout.ADDRESS)); // instance out pointer
+            ValueLayout.ADDRESS)); // u64* instance_id_out
 
     addFunctionBinding(
         "wasmtime4j_component_instance_pre_is_valid",
@@ -1839,26 +1842,36 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   }
 
   /**
-   * Instantiates a component using the component linker.
+   * Instantiates a component using the component linker and registers the resulting instance in the
+   * enhanced component engine.
    *
+   * <p>Native writes the assigned instance ID (a lookup key into {@code
+   * EnhancedComponentEngine::instances}) to {@code instanceIdOut}. The {@code enginePtr} + {@code
+   * instanceId} pair is the shape all post-instantiation FFI calls use (see {@link
+   * #enhancedComponentInvoke}).
+   *
+   * @param enginePtr pointer to the enhanced component engine that will own the registered instance
    * @param linkerPtr pointer to the component linker
    * @param componentPtr pointer to the component
-   * @param instanceOutPtr pointer to store the instance pointer
+   * @param instanceIdOut u64 out-pointer to receive the assigned instance ID
    * @return 0 on success, non-zero on error
    */
   public int componentLinkerInstantiate(
+      final MemorySegment enginePtr,
       final MemorySegment linkerPtr,
       final MemorySegment componentPtr,
-      final MemorySegment instanceOutPtr) {
+      final MemorySegment instanceIdOut) {
+    validatePointer(enginePtr, "enginePtr");
     validatePointer(linkerPtr, "linkerPtr");
     validatePointer(componentPtr, "componentPtr");
-    validatePointer(instanceOutPtr, "instanceOutPtr");
+    validatePointer(instanceIdOut, "instanceIdOut");
     return callNativeFunction(
         "wasmtime4j_component_linker_instantiate",
         Integer.class,
+        enginePtr,
         linkerPtr,
         componentPtr,
-        instanceOutPtr);
+        instanceIdOut);
   }
 
   // ===== Component Serialize/Deserialize =====
@@ -2197,23 +2210,39 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   }
 
   /**
-   * Instantiates from a pre-instantiated component.
+   * Instantiates from a pre-instantiated component and registers the resulting instance in the
+   * enhanced component engine.
    *
+   * <p>Writes the assigned instance ID (lookup key into {@code EnhancedComponentEngine::instances})
+   * to {@code instanceIdOut}. The {@code enginePtr} + {@code instanceId} pair is directly callable
+   * by {@link #enhancedComponentInvoke}.
+   *
+   * @param enginePtr pointer to the enhanced component engine that will own the registered instance
    * @param prePtr pointer to the pre-instantiated handle
-   * @param instanceOutPtr pointer to store the instance pointer
+   * @param instanceIdOut u64 out-pointer to receive the assigned instance ID
    * @return 0 on success, non-zero on error
    */
   public int componentInstancePreInstantiate(
-      final MemorySegment prePtr, final MemorySegment instanceOutPtr) {
+      final MemorySegment enginePtr,
+      final MemorySegment prePtr,
+      final MemorySegment instanceIdOut) {
+    validatePointer(enginePtr, "enginePtr");
     validatePointer(prePtr, "prePtr");
-    validatePointer(instanceOutPtr, "instanceOutPtr");
+    validatePointer(instanceIdOut, "instanceIdOut");
     return callNativeFunction(
-        "wasmtime4j_component_instance_pre_instantiate", Integer.class, prePtr, instanceOutPtr);
+        "wasmtime4j_component_instance_pre_instantiate",
+        Integer.class,
+        enginePtr,
+        prePtr,
+        instanceIdOut);
   }
 
   /**
-   * Instantiates from a pre-instantiated component with store configuration.
+   * Instantiates from a pre-instantiated component with store configuration, then registers the
+   * resulting instance in the enhanced component engine. See {@link
+   * #componentInstancePreInstantiate} for the ABI shape.
    *
+   * @param enginePtr pointer to the enhanced component engine that will own the registered instance
    * @param prePtr pointer to the pre-instantiated handle
    * @param fuelLimit fuel limit for the store (0 for no limit)
    * @param epochDeadline epoch deadline for the store (0 for no deadline)
@@ -2223,10 +2252,11 @@ public final class NativeComponentBindings extends NativeBindingsBase {
    * @param maxTables maximum tables (0 for unlimited)
    * @param maxMemories maximum memories (0 for unlimited)
    * @param trapOnGrowFailure whether to trap on grow failure (1) or return -1 (0)
-   * @param instanceOutPtr pointer to store the instance pointer
+   * @param instanceIdOut u64 out-pointer to receive the assigned instance ID
    * @return 0 on success, non-zero on error
    */
   public int componentInstancePreInstantiateWithConfig(
+      final MemorySegment enginePtr,
       final MemorySegment prePtr,
       final long fuelLimit,
       final long epochDeadline,
@@ -2236,12 +2266,14 @@ public final class NativeComponentBindings extends NativeBindingsBase {
       final long maxTables,
       final long maxMemories,
       final byte trapOnGrowFailure,
-      final MemorySegment instanceOutPtr) {
+      final MemorySegment instanceIdOut) {
+    validatePointer(enginePtr, "enginePtr");
     validatePointer(prePtr, "prePtr");
-    validatePointer(instanceOutPtr, "instanceOutPtr");
+    validatePointer(instanceIdOut, "instanceIdOut");
     return callNativeFunction(
         "wasmtime4j_component_instance_pre_instantiate_with_config",
         Integer.class,
+        enginePtr,
         prePtr,
         fuelLimit,
         epochDeadline,
@@ -2251,7 +2283,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         maxTables,
         maxMemories,
         trapOnGrowFailure,
-        instanceOutPtr);
+        instanceIdOut);
   }
 
   /**

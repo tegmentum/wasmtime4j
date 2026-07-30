@@ -2235,6 +2235,158 @@ impl ComponentLinker {
         Ok(Arc::new(instance))
     }
 
+    /// Instantiate a component using THIS linker end-to-end and return a
+    /// [`ComponentInstanceHandle`] that owns the fresh `Store` alongside
+    /// the resulting `Instance`.
+    ///
+    /// Unlike [`instantiate`](Self::instantiate) — which returns only an
+    /// `Arc<ComponentInstance>` and drops the underlying store — this
+    /// keeps the `(Store, Instance)` pair intact, matching what
+    /// `EnhancedComponentEngine::register_instance` expects. Wasmtime's
+    /// ownership model requires the store to outlive the instance for
+    /// any subsequent invocation to be safe, so callers that plan to
+    /// invoke exports on the resulting instance must use this method.
+    ///
+    /// This is the entry point used by the JNI `nativeInstantiateWithLinker`
+    /// path: caller-registered bindings on this linker — WASI (if
+    /// `enable_wasi_preview2` was called), host functions defined via
+    /// `define_function`, WASI-NN (if `enable_wasi_nn`), etc. — all reach
+    /// the instantiation directly, without the previous workaround of
+    /// routing through `EnhancedComponentEngine::instantiate_component`'s
+    /// internal fresh linker and replaying a subset of bindings.
+    ///
+    /// # Auto-added bindings
+    ///
+    /// Before instantiation this method ensures a set of "always safe"
+    /// bindings are present on the linker — matching what the removed
+    /// `instantiate_component_with_bindings` workaround was doing on its
+    /// fresh internal linker. This preserves prior behavior for callers
+    /// that did not explicitly enable these on their `ComponentLinker`:
+    ///
+    /// - **WASI Preview 2**: enabled iff not already enabled. The workaround
+    ///   silently added `wasmtime_wasi::p2::add_to_linker_sync` to its fresh
+    ///   linker, so guests importing `wasi:cli/environment` etc. resolved
+    ///   even when the caller forgot to call `enable_wasi_preview2()`.
+    /// - **Process-registered host functions**: replayed via
+    ///   `add_registered_host_functions_to_linker` (uses `allow_shadowing`,
+    ///   safe if already present).
+    /// - **WASI-NN**: added iff any `ComponentLinker` in-process has
+    ///   published `enable_wasi_nn` to the process-global.
+    pub fn instantiate_owned(
+        &mut self,
+        component: &Component,
+    ) -> WasmtimeResult<ComponentInstanceHandle> {
+        if self.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "ComponentLinker has been disposed".to_string(),
+                backtrace: None,
+            });
+        }
+
+        // Safety-net binding registration — see method docstring. Preserves
+        // the behavior of the removed `instantiate_component_with_bindings`
+        // workaround, which silently added these to its fresh internal linker.
+        #[cfg(feature = "wasi")]
+        {
+            if !self.wasi_p2_enabled {
+                self.enable_wasi_preview2()?;
+            }
+        }
+        add_registered_host_functions_to_linker(&mut self.linker)?;
+        add_wasi_nn_to_linker_if_enabled(&mut self.linker)?;
+
+        let start_time = Instant::now();
+
+        // Build store data mirroring `instantiate` — WASI/WASI-NN ctxes
+        // from linker config.
+        #[cfg(feature = "wasi")]
+        let mut store_data = if self.wasi_p2_enabled {
+            ComponentStoreData {
+                instance_id: 0,
+                user_data: None,
+                resource_table: ResourceTable::new(),
+                wasi_ctx: self.build_wasi_ctx(),
+                #[cfg(feature = "wasi-http")]
+                wasi_http_ctx: if self.wasi_http_enabled {
+                    Some(self.create_wasi_http_ctx())
+                } else {
+                    None
+                },
+                #[cfg(feature = "wasi-http")]
+                wasi_http_hooks: [(); 0],
+                #[cfg(feature = "wasi-config")]
+                wasi_config_vars: self.build_wasi_config_vars(),
+                #[cfg(feature = "wasi-nn")]
+                wasi_nn_ctx: None,
+                store_limits: None,
+                #[cfg(feature = "wasi")]
+                fs_access_observer: None,
+                start_time,
+            }
+        } else {
+            ComponentStoreData {
+                instance_id: 0,
+                user_data: None,
+                #[cfg(feature = "wasi-config")]
+                wasi_config_vars: self.build_wasi_config_vars(),
+                ..Default::default()
+            }
+        };
+
+        #[cfg(not(feature = "wasi"))]
+        let mut store_data = ComponentStoreData {
+            instance_id: 0,
+            user_data: None,
+            #[cfg(feature = "wasi-config")]
+            wasi_config_vars: self.build_wasi_config_vars(),
+            ..Default::default()
+        };
+
+        #[cfg(feature = "wasi-nn")]
+        {
+            if self.wasi_nn_enabled {
+                store_data.wasi_nn_ctx = Some(self.build_wasi_nn_ctx());
+            }
+        }
+
+        let mut store = Store::new(&self.engine, store_data);
+        // The shared component engine meters fuel + epoch; this path takes no explicit caps,
+        // so run unlimited (otherwise the first instruction / first tick would trap).
+        let _ = store.set_fuel(u64::MAX);
+        // set_epoch_deadline is RELATIVE — u64::MAX would wrap. Use the crate's
+        // finite "no deadline" sentinel.
+        store.set_epoch_deadline(crate::component_core::NO_EPOCH_DEADLINE);
+
+        let recompiled = self.ensure_engine_compatible(component)?;
+        let comp_ref = recompiled
+            .as_ref()
+            .unwrap_or_else(|| component.wasmtime_component());
+
+        let instance = self
+            .linker
+            .instantiate(&mut store, comp_ref)
+            .map_err(|e| WasmtimeError::Instance {
+                message: format!("Failed to instantiate component: {:#}", e),
+            })?;
+
+        // Capture the post-instantiation fuel level as the baseline BEFORE moving `store`
+        // into the handle so `fuelConsumed()` reports fuel spent AFTER init.
+        let baseline = store.get_fuel().unwrap_or(u64::MAX);
+
+        Ok(ComponentInstanceHandle {
+            store,
+            instance,
+            metadata: component.metadata().clone(),
+            created_at: start_time,
+            last_accessed: start_time,
+            ref_count: 1,
+            component_bytes: Arc::clone(component.original_bytes()),
+            per_call_fuel: None,
+            per_call_epoch_deadline: None,
+            fuel_baseline: Some(baseline),
+        })
+    }
+
     /// Pre-instantiate a component for fast repeated instantiation.
     ///
     /// This performs the expensive type-checking and import resolution work once,
@@ -3839,27 +3991,63 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_set_config_variables(
     FFI_SUCCESS
 }
 
-/// Instantiate a component using the linker
+/// Instantiate a component using the linker (Panama FFI entry).
+///
+/// Writes the assigned instance ID to `instance_id_out`. The ID is a lookup key
+/// into `EnhancedComponentEngine::instances`, matching what the Panama enhanced
+/// invoke path (`wasmtime4j_panama_enhanced_component_invoke`) expects — the pair
+/// `(engine_ptr, instance_id)` is the shape used everywhere else in this crate
+/// for post-instantiation calls.
+///
+/// This mirrors the JNI `nativeInstantiateWithLinker` path
+/// (`instantiate_owned` + `EnhancedComponentEngine::register_instance`) so that
+/// the linker's WASI / host-function / wasi-nn bindings all
+/// reach the fresh `(Store, Instance)` pair without the previous workaround of
+/// re-routing through a fresh internal linker.
+///
+/// Historically this took no engine pointer and wrote a `Box<ComponentInstanceHandle>`
+/// pointer to `instance_out`. Downstream Java stored that box pointer as if it
+/// were an `EnhancedComponentEngine *` and derived the instance ID from its
+/// address, so subsequent `enhancedComponentInvoke(engine, id, ...)` calls
+/// dereferenced random memory and looked up an ID the engine's hashmap didn't
+/// know about — the path was effectively dead. The signature change requires a
+/// matching change in `NativeComponentBindings.componentLinkerInstantiate` on
+/// the Java side.
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_linker_instantiate(
-    linker_ptr: *const c_void,
+    engine_ptr: *const c_void,
+    linker_ptr: *mut c_void,
     component_ptr: *const c_void,
-    instance_out: *mut *mut c_void,
+    instance_id_out: *mut u64,
 ) -> c_int {
-    if linker_ptr.is_null() || component_ptr.is_null() || instance_out.is_null() {
+    if engine_ptr.is_null()
+        || linker_ptr.is_null()
+        || component_ptr.is_null()
+        || instance_id_out.is_null()
+    {
         return FFI_ERROR;
     }
 
-    let linker = &*(linker_ptr as *const ComponentLinker);
+    // `instantiate_owned` requires `&mut self` (it may safety-net-add WASI-P2
+    // and replay host-fn / wasi-nn registrations onto the linker before
+    // instantiation).
+    let engine = &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine);
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
     let component = &*(component_ptr as *const Component);
 
-    match linker.instantiate(component) {
-        Ok(instance) => {
-            *instance_out = Box::into_raw(Box::new(instance)) as *mut c_void;
-            FFI_SUCCESS
-        }
+    match linker.instantiate_owned(component) {
+        Ok(handle) => match engine.register_instance(handle) {
+            Ok(instance_id) => {
+                *instance_id_out = instance_id;
+                FFI_SUCCESS
+            }
+            Err(e) => {
+                log::error!("Failed to register component instance: {}", e);
+                FFI_ERROR
+            }
+        },
         Err(e) => {
-            log::error!("Failed to instantiate component: {}", e);
+            log::error!("Failed to instantiate component through linker: {}", e);
             FFI_ERROR
         }
     }
@@ -4015,27 +4203,43 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_instantiate_pre(
     }
 }
 
-/// Instantiate from a ComponentInstancePre
+/// Instantiate from a ComponentInstancePre.
+///
+/// Writes the assigned instance ID to `instance_id_out`. Registers the resulting
+/// `(Store, Instance)` handle in `EnhancedComponentEngine::instances` so that the
+/// pair `(engine_ptr, instance_id)` is directly callable by
+/// `wasmtime4j_panama_enhanced_component_invoke` — the same shape the direct
+/// `wasmtime4j_panama_enhanced_component_instantiate` path uses. See the
+/// docstring of `wasmtime4j_component_linker_instantiate` for why this replaced
+/// the previous "return a raw handle box" ABI.
 ///
 /// # Safety
 ///
-/// pre_ptr and instance_out must be valid pointers
+/// `engine_ptr`, `pre_ptr` and `instance_id_out` must be valid non-null pointers.
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_instance_pre_instantiate(
+    engine_ptr: *const c_void,
     pre_ptr: *const c_void,
-    instance_out: *mut *mut c_void,
+    instance_id_out: *mut u64,
 ) -> c_int {
-    if pre_ptr.is_null() || instance_out.is_null() {
+    if engine_ptr.is_null() || pre_ptr.is_null() || instance_id_out.is_null() {
         return FFI_ERROR;
     }
 
+    let engine = &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine);
     let wrapper = &*(pre_ptr as *const ComponentInstancePreWrapper);
 
     match wrapper.instantiate() {
-        Ok(instance) => {
-            *instance_out = Box::into_raw(Box::new(instance)) as *mut c_void;
-            FFI_SUCCESS
-        }
+        Ok(handle) => match engine.register_instance(handle) {
+            Ok(instance_id) => {
+                *instance_id_out = instance_id;
+                FFI_SUCCESS
+            }
+            Err(e) => {
+                log::error!("Failed to register pre-instantiated component: {}", e);
+                FFI_ERROR
+            }
+        },
         Err(e) => {
             log::error!("Failed to instantiate from ComponentInstancePre: {}", e);
             FFI_ERROR
@@ -4043,13 +4247,16 @@ pub unsafe extern "C" fn wasmtime4j_component_instance_pre_instantiate(
     }
 }
 
-/// Instantiate from a ComponentInstancePre with store configuration
+/// Instantiate from a ComponentInstancePre with store configuration.
+///
+/// See `wasmtime4j_component_instance_pre_instantiate` for the ABI rationale.
 ///
 /// # Safety
 ///
-/// pre_ptr and instance_out must be valid pointers
+/// `engine_ptr`, `pre_ptr` and `instance_id_out` must be valid non-null pointers.
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_instance_pre_instantiate_with_config(
+    engine_ptr: *const c_void,
     pre_ptr: *const c_void,
     fuel_limit: u64,
     epoch_deadline: u64,
@@ -4059,12 +4266,13 @@ pub unsafe extern "C" fn wasmtime4j_component_instance_pre_instantiate_with_conf
     max_tables: u64,
     max_memories: u64,
     trap_on_grow_failure: u8,
-    instance_out: *mut *mut c_void,
+    instance_id_out: *mut u64,
 ) -> c_int {
-    if pre_ptr.is_null() || instance_out.is_null() {
+    if engine_ptr.is_null() || pre_ptr.is_null() || instance_id_out.is_null() {
         return FFI_ERROR;
     }
 
+    let engine = &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine);
     let wrapper = &*(pre_ptr as *const ComponentInstancePreWrapper);
 
     match wrapper.instantiate_with_config(
@@ -4077,10 +4285,19 @@ pub unsafe extern "C" fn wasmtime4j_component_instance_pre_instantiate_with_conf
         max_memories,
         trap_on_grow_failure != 0,
     ) {
-        Ok(instance) => {
-            *instance_out = Box::into_raw(Box::new(instance)) as *mut c_void;
-            FFI_SUCCESS
-        }
+        Ok(handle) => match engine.register_instance(handle) {
+            Ok(instance_id) => {
+                *instance_id_out = instance_id;
+                FFI_SUCCESS
+            }
+            Err(e) => {
+                log::error!(
+                    "Failed to register pre-instantiated component (with config): {}",
+                    e
+                );
+                FFI_ERROR
+            }
+        },
         Err(e) => {
             log::error!(
                 "Failed to instantiate from ComponentInstancePre with config: {}",

@@ -22,10 +22,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import ai.tegmentum.wasmtime4j.component.Component;
+import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
+import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +63,15 @@ class PanamaComponentLinkerTest {
 
   private static boolean checkNativeAvailable() {
     try {
-      // Only verify engine creation - component linker creation can SIGSEGV and crash the JVM
+      // Instantiate a real PanamaComponentLinker end-to-end. Before the r.1.5.1
+      // fix, `wasmtime4j_component_linker_instantiate` returned a raw handle box
+      // pointer that PanamaComponentInstance stored as if it were an
+      // EnhancedComponentEngine pointer — invoke() then dereferenced garbage and
+      // could SIGSEGV. Now that constructor + FFI shape match the JNI path,
+      // linker construction is safe here.
       final PanamaEngine testEngine = new PanamaEngine();
+      final PanamaComponentLinker<Void> testLinker = new PanamaComponentLinker<>(testEngine);
+      testLinker.close();
       testEngine.close();
       return true;
     } catch (final Exception | Error e) {
@@ -428,6 +441,63 @@ class PanamaComponentLinkerTest {
       linker.close();
       linker.close(); // Should not throw
       assertFalse(linker.isValid());
+    }
+  }
+
+  /**
+   * End-to-end coverage for {@link PanamaComponentLinker#instantiate}. Regression guard for the
+   * FFI wiring bug where `wasmtime4j_component_linker_instantiate` returned a raw
+   * `Box<ComponentInstanceHandle>` pointer that Java stored as if it were an
+   * `EnhancedComponentEngine *` — invoke() then dispatched with an instance ID the engine's
+   * HashMap did not know about (and derived from that pointer's address). The path was hidden
+   * because no linker-based test exercised invoke; adding this test unblocked the fix.
+   */
+  @Nested
+  @DisplayName("Linker Instantiate + Invoke (Integration) Tests")
+  class LinkerInstantiateIntegrationTests {
+
+    private PanamaComponentEngine componentEngine;
+
+    @BeforeEach
+    void setUpComponentEngine() throws WasmException {
+      componentEngine = new PanamaComponentEngine(new ComponentEngineConfig());
+    }
+
+    @AfterEach
+    void tearDownComponentEngine() {
+      if (componentEngine != null) {
+        componentEngine.close();
+      }
+    }
+
+    @Test
+    @DisplayName("Should instantiate a component through the linker and invoke an export")
+    void testInstantiateAndInvokeAdd() throws WasmException, IOException {
+      // Uses a trivial component that exports `add(a: s32, b: s32) -> s32`. Same
+      // fixture the JNI end-to-end test uses (copied from wasmtime4j-jni's test
+      // resources); no host imports, so we can lean on the linker's safety-net
+      // WASI-P2 add and skip any defineFunction wiring.
+      final Path componentPath = Path.of("src/test/resources/components/add.wasm");
+      final byte[] componentBytes = Files.readAllBytes(componentPath);
+
+      final Component component = componentEngine.compileComponent(componentBytes);
+      try (final PanamaStore store = new PanamaStore(engine)) {
+        try (ComponentInstance instance = linker.instantiate(store, component)) {
+          assertNotNull(instance, "linker.instantiate must return an instance");
+          assertTrue(instance.isValid(), "linker-created instance must be valid");
+
+          final Object result = instance.invoke("add", 5, 7);
+          assertEquals(12, ((Number) result).intValue(), "add(5, 7) must return 12");
+
+          // Sanity: invoke again on the same instance. Pre-fix, the second call
+          // would resolve the same broken (engine, id) pair and either fail or
+          // corrupt state.
+          final Object result2 = instance.invoke("add", 100, 42);
+          assertEquals(142, ((Number) result2).intValue(), "add(100, 42) must return 142");
+        }
+      } finally {
+        component.close();
+      }
     }
   }
 }

@@ -89,27 +89,37 @@ public final class PanamaComponentInstancePre implements ComponentInstancePre {
     resourceHandle.beginOperation();
     try {
 
+      // Route the new (Store, Instance) handle through the component's owning
+      // EnhancedComponentEngine so subsequent enhancedComponentInvoke calls resolve
+      // via (engineHandle, instanceId) — see PanamaComponentLinker.instantiate for
+      // the same pattern.
+      final MemorySegment engineHandle = component.getEngine().getNativeHandle();
+
       try (Arena tempArena = Arena.ofConfined()) {
-        final MemorySegment instanceOutPtr = tempArena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment instanceIdOut = tempArena.allocate(ValueLayout.JAVA_LONG);
 
         final int errorCode =
-            NATIVE_BINDINGS.componentInstancePreInstantiate(nativePreHandle, instanceOutPtr);
+            NATIVE_BINDINGS.componentInstancePreInstantiate(
+                engineHandle, nativePreHandle, instanceIdOut);
 
         if (errorCode != 0) {
           throw PanamaErrorMapper.mapNativeError(
               errorCode, "Failed to instantiate from ComponentInstancePre");
         }
 
-        final MemorySegment instancePtr = instanceOutPtr.get(ValueLayout.ADDRESS, 0);
+        final long instanceId = instanceIdOut.get(ValueLayout.JAVA_LONG, 0);
 
-        if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+        if (instanceId == 0) {
           throw new WasmException(
-              "Failed to instantiate from ComponentInstancePre: null instance returned");
+              "Failed to instantiate from ComponentInstancePre: invalid instance ID returned");
         }
 
-        LOGGER.fine("Successfully instantiated component from ComponentInstancePre");
+        LOGGER.fine(
+            "Successfully instantiated component from ComponentInstancePre (id="
+                + instanceId
+                + ")");
 
-        return new PanamaComponentInstance(instancePtr, component, null, this);
+        return new PanamaComponentInstance(engineHandle, instanceId, component, null, this);
       }
     } finally {
       resourceHandle.endOperation();
@@ -124,11 +134,14 @@ public final class PanamaComponentInstancePre implements ComponentInstancePre {
     resourceHandle.beginOperation();
     try {
 
+      final MemorySegment engineHandle = component.getEngine().getNativeHandle();
+
       try (Arena tempArena = Arena.ofConfined()) {
-        final MemorySegment instanceOutPtr = tempArena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment instanceIdOut = tempArena.allocate(ValueLayout.JAVA_LONG);
 
         final int errorCode =
             NATIVE_BINDINGS.componentInstancePreInstantiateWithConfig(
+                engineHandle,
                 nativePreHandle,
                 config.getFuelLimit(),
                 config.getEpochDeadline(),
@@ -138,24 +151,27 @@ public final class PanamaComponentInstancePre implements ComponentInstancePre {
                 config.getMaxTables(),
                 config.getMaxMemories(),
                 config.isTrapOnGrowFailure() ? (byte) 1 : (byte) 0,
-                instanceOutPtr);
+                instanceIdOut);
 
         if (errorCode != 0) {
           throw PanamaErrorMapper.mapNativeError(
               errorCode, "Failed to instantiate from ComponentInstancePre with config");
         }
 
-        final MemorySegment instancePtr = instanceOutPtr.get(ValueLayout.ADDRESS, 0);
+        final long instanceId = instanceIdOut.get(ValueLayout.JAVA_LONG, 0);
 
-        if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+        if (instanceId == 0) {
           throw new WasmException(
-              "Failed to instantiate from ComponentInstancePre with config: null instance"
+              "Failed to instantiate from ComponentInstancePre with config: invalid instance ID"
                   + " returned");
         }
 
-        LOGGER.fine("Successfully instantiated component from ComponentInstancePre with config");
+        LOGGER.fine(
+            "Successfully instantiated component from ComponentInstancePre with config (id="
+                + instanceId
+                + ")");
 
-        return new PanamaComponentInstance(instancePtr, component, null, this);
+        return new PanamaComponentInstance(engineHandle, instanceId, component, null, this);
       }
     } finally {
       resourceHandle.endOperation();

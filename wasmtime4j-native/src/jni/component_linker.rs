@@ -1912,20 +1912,28 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
         component_handle
     );
 
-    // Real linker-based instantiation. Previously this returned a phantom instance ID
-    // without registering anything with the component engine, so subsequent invokes
-    // failed with "Instance ID N not found in engine".
+    // Real linker-based instantiation using the caller's `ComponentLinker` end-to-end.
     //
-    // The caller-supplied linker/store handles are intentionally not used here: this
-    // path routes to `EnhancedComponentEngine::instantiate_component`, which
-    // constructs its own Store on the component's engine (with defaults) and
-    // registers the instance in that engine's HashMap so it is reachable by
-    // subsequent `nativeComponentInvokeFunction` calls. Callers who need explicit
-    // WASI capabilities or a custom store should use
-    // `nativeInstantiateComponentWithWasi`.
+    // Uses `ComponentLinker::instantiate_owned` — which builds a `Store` from the linker's
+    // own WASI/WASI-NN configuration and instantiates the component against `self.linker` —
+    // then registers the resulting `(Store, Instance)` handle with the
+    // `EnhancedComponentEngine` so it is reachable by subsequent
+    // `nativeComponentInvokeFunction` calls.
+    //
+    // The `store_handle` parameter is currently ignored: `Store` in wasmtime is
+    // parameterized on the linker's data type (`ComponentStoreData` here) and cannot be
+    // handed in externally without breaking that invariant. The linker owns the store
+    // it instantiates against; callers who want custom store limits/fuel/etc. should
+    // use `nativeInstantiateComponentWithWasi`.
+    let _ = store_handle;
     jni_utils::jni_try_with_default(&mut env, 0, || {
         let engine = unsafe {
             &*(engine_handle as *const crate::component_core::EnhancedComponentEngine)
+        };
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(
+                linker_handle as *mut std::os::raw::c_void,
+            )?
         };
         let component = unsafe {
             crate::component::core::get_component_ref(
@@ -1933,7 +1941,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
             )?
         };
 
-        let instance_id = engine.instantiate_component(component)?;
+        let handle = linker.instantiate_owned(component)?;
+        let instance_id = engine.register_instance(handle)?;
 
         log::info!(
             "Created component instance {} via linker instantiation",

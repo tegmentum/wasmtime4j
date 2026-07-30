@@ -119,37 +119,14 @@ final class PanamaComponentInstance implements ComponentInstance {
             });
   }
 
-  /**
-   * Creates a new Panama component instance from a linker-based or pre-instantiation.
-   *
-   * <p>This constructor is used when instantiating through a ComponentLinker or
-   * ComponentInstancePre. The instance ID is derived from the native instance pointer address.
-   *
-   * @param nativeInstancePtr the native instance pointer returned from instantiation
-   * @param component the parent component
-   * @param store the store (may be null for linker-based instantiation)
-   * @param sourceInstancePre the ComponentInstancePre that created this instance, or null
-   */
-  PanamaComponentInstance(
-      final MemorySegment nativeInstancePtr,
-      final PanamaComponentImpl component,
-      final PanamaStore store,
-      final ComponentInstancePre sourceInstancePre) {
-    // Use the native instance pointer address as the instance ID
-    this.enhancedEngineHandle = nativeInstancePtr;
-    this.instanceId = nativeInstancePtr.address();
-    this.component = component;
-    this.store = store;
-    this.sourceInstancePre = sourceInstancePre;
-    this.resourceHandle =
-        new NativeResourceHandle(
-            "PanamaComponentInstance",
-            () -> {
-              // Enhanced component engine manages instance lifecycle
-              // Instances are automatically cleaned up when engine is destroyed
-              // No need to manually destroy individual instances
-            });
-  }
+  // Note: the historical `PanamaComponentInstance(nativeInstancePtr, component, store,
+  // sourceInstancePre)` constructor was removed because it stored an
+  // `EnhancedComponentEngine::instances` box pointer where invoke() expected an
+  // engine pointer, and derived the instanceId from that pointer's address — a
+  // combination that never matched any registered entry in the engine's HashMap.
+  // Both linker-based and InstancePre-based paths now go through the 4/5-arg
+  // (engineHandle, instanceId, ...) constructors above, mirroring the direct
+  // PanamaComponentEngine.createInstance path.
 
   @Override
   public String getId() {

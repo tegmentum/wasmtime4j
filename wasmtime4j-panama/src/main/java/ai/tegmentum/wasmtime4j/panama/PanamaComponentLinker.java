@@ -513,32 +513,43 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
       final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
       final PanamaStore panamaStore = (store instanceof PanamaStore) ? (PanamaStore) store : null;
 
-      try (Arena tempArena = Arena.ofConfined()) {
-        // Allocate output pointer for the instance
-        final MemorySegment instanceOutPtr = tempArena.allocate(ValueLayout.ADDRESS);
+      // Route through the component's owning EnhancedComponentEngine so the fresh
+      // (Store, Instance) handle produced by `ComponentLinker::instantiate_owned`
+      // ends up in that engine's `instances` HashMap. `enhancedComponentInvoke`
+      // dispatches off (engine_ptr, instance_id) — the same shape used by the
+      // direct `PanamaComponentEngine.createInstance` path — so subsequent
+      // invocations resolve through the exact registry entry we just created.
+      final MemorySegment engineHandle = panamaComponent.getEngine().getNativeHandle();
 
-        // Call native linker instantiate
+      try (Arena tempArena = Arena.ofConfined()) {
+        // u64 out-param for the instance ID assigned by register_instance
+        final MemorySegment instanceIdOut = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+        // Call native linker instantiate + register-in-engine
         final int errorCode =
             NATIVE_BINDINGS.componentLinkerInstantiate(
-                nativeLinker, panamaComponent.getNativeHandle(), instanceOutPtr);
+                engineHandle,
+                nativeLinker,
+                panamaComponent.getNativeHandle(),
+                instanceIdOut);
 
         if (errorCode != 0) {
           throw PanamaErrorMapper.mapNativeError(
               errorCode, "Failed to instantiate component through linker");
         }
 
-        // Get the instance pointer from the output
-        final MemorySegment instancePtr = instanceOutPtr.get(ValueLayout.ADDRESS, 0);
+        final long instanceId = instanceIdOut.get(ValueLayout.JAVA_LONG, 0);
 
-        if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+        if (instanceId == 0) {
           throw new WasmException(
-              "Failed to instantiate component through linker: null instance returned");
+              "Failed to instantiate component through linker: invalid instance ID returned");
         }
 
-        LOGGER.fine("Successfully instantiated component through linker");
+        LOGGER.fine("Successfully instantiated component through linker (id=" + instanceId + ")");
 
-        // Create and return the component instance
-        return new PanamaComponentInstance(instancePtr, panamaComponent, panamaStore, null);
+        // Wrap with the (engineHandle, instanceId) constructor so invoke() dispatches
+        // through the enhanced component engine's registry — matching PanamaComponentEngine.
+        return new PanamaComponentInstance(engineHandle, instanceId, panamaComponent, panamaStore);
       }
     } finally {
       resourceHandle.endOperation();

@@ -36,7 +36,7 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// "No epoch deadline" sentinel: a relative tick count large enough to never fire, yet small
 /// enough that `current_epoch + this` cannot overflow (the epoch ticker advances ~1/ms).
-const NO_EPOCH_DEADLINE: u64 = u64::MAX >> 1;
+pub(crate) const NO_EPOCH_DEADLINE: u64 = u64::MAX >> 1;
 
 /// Enhanced component engine with actual Wasmtime component model integration
 pub struct EnhancedComponentEngine {
