@@ -44,7 +44,7 @@ use wasmtime_wasi::p2::bindings::filesystem::types::{
     self, Host as FsTypesHost, HostDescriptor, HostDirectoryEntryStream,
 };
 use wasmtime_wasi::p2::{DynInputStream, DynOutputStream, FsError, FsResult};
-use wasmtime_wasi::{DirPerms, FilePerms, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
+use wasmtime_wasi::{FsPerms, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
 /// Denials observed by the interposing filesystem view (process-global for the spike;
 /// production would carry a `DenialSink` on the view instead).
@@ -412,7 +412,8 @@ fn main() -> wasmtime::Result<()> {
 
     let mut builder = WasiCtxBuilder::new();
     builder.allow_blocking_current_thread(true); // makes open_at resolve synchronously
-    builder.preopened_dir(&tmp, "/", DirPerms::READ, FilePerms::READ)?;
+    // wasmtime 48 collapsed DirPerms + FilePerms into a single FsPerms enum.
+    builder.preopened_dir(&tmp, "/", FsPerms::ReadOnly)?;
     let ctx = builder.build();
 
     let mut state = SpikeState {

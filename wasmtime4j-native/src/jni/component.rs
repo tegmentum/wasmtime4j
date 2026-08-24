@@ -172,8 +172,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
 /// network), registering the instance in the component's engine so it is invocable.
 ///
 /// This is the native backing for capability-confined component instantiation: the host
-/// passes the granted preopen dirs (host path, guest path, dir/file permission bits), env
-/// vars, stdio inheritance, and a network allow flag. Everything not granted is denied.
+/// passes the granted preopen dirs (host path, guest path, FsPerms access-mode code — 0
+/// READ_ONLY, 1 READ_WRITE), env vars, stdio inheritance, and a network allow flag.
+/// Everything not granted is denied.
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInstantiateComponentWithWasi(
     mut env: JNIEnv,
@@ -182,8 +183,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
     component_ptr: jlong,
     host_paths: jni::objects::JObjectArray,
     guest_paths: jni::objects::JObjectArray,
-    dir_perm_bits: jni::objects::JIntArray,
-    file_perm_bits: jni::objects::JIntArray,
+    fs_perms_codes: jni::objects::JIntArray,
     env_keys: jni::objects::JObjectArray,
     env_vals: jni::objects::JObjectArray,
     inherit_stdout: jboolean,
@@ -219,8 +219,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
 
     let hosts = read_strings(&mut env, &host_paths);
     let guests = read_strings(&mut env, &guest_paths);
-    let dperms = read_ints(&mut env, &dir_perm_bits);
-    let fperms = read_ints(&mut env, &file_perm_bits);
+    let fs_perms = read_ints(&mut env, &fs_perms_codes);
     let ekeys = read_strings(&mut env, &env_keys);
     let evals = read_strings(&mut env, &env_vals);
 
@@ -277,10 +276,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
         cfg.inherit_stdout = inherit_stdout != 0;
         cfg.inherit_stderr = inherit_stderr != 0;
         for i in 0..hosts.len() {
-            let d = dperms.get(i).copied().unwrap_or(1) as u32;
-            let f = fperms.get(i).copied().unwrap_or(1) as u32;
+            // Default missing entries to READ_ONLY (wire code 0) to fail closed if the
+            // Java side over-declared preopens without a matching perms entry.
+            let code = fs_perms.get(i).copied().unwrap_or(0) as u32;
             let guest = guests.get(i).cloned().unwrap_or_else(|| hosts[i].clone());
-            cfg.preopened_dirs.push((hosts[i].clone(), guest, d, f));
+            cfg.preopened_dirs.push((hosts[i].clone(), guest, code));
         }
         for i in 0..ekeys.len() {
             cfg.env

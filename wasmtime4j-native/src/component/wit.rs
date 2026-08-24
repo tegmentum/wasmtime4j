@@ -147,6 +147,15 @@ pub enum ComponentValueType {
     String,
     /// List of values
     List(Box<ComponentValueType>),
+    /// Fixed-length list of values (wasmtime 48+). The length is a schema-level
+    /// constraint enforced at typecheck time; runtime values still travel as
+    /// plain lists.
+    FixedLengthList {
+        /// Element type
+        element: Box<ComponentValueType>,
+        /// Number of elements the list must contain
+        length: u32,
+    },
     /// Optional value
     Option(Box<ComponentValueType>),
     /// Result type with success and error cases

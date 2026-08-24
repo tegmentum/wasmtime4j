@@ -290,28 +290,22 @@ class WasiPreview2ConfigTest {
     }
 
     @Test
-    @DisplayName("should create preopen dir with granular permissions")
-    void shouldCreatePreopenDirWithGranularPermissions() {
-      DirPerms dirPerms = DirPerms.readOnly();
-      FilePerms filePerms = FilePerms.readOnly();
-
+    @DisplayName("should create read-only preopen dir with FsPerms")
+    void shouldCreatePreopenDirWithReadOnlyFsPerms() {
       WasiPreview2Config.PreopenDir dir =
-          new WasiPreview2Config.PreopenDir(Paths.get("/tmp"), "/sandbox", dirPerms, filePerms);
+          new WasiPreview2Config.PreopenDir(Paths.get("/tmp"), "/sandbox", FsPerms.READ_ONLY);
 
-      assertEquals(dirPerms, dir.getDirPerms());
-      assertEquals(filePerms, dir.getFilePerms());
+      assertEquals(FsPerms.READ_ONLY, dir.getFsPerms());
       assertTrue(dir.isReadOnly());
     }
 
     @Test
-    @DisplayName("should create preopen dir with full permissions")
-    void shouldCreatePreopenDirWithFullPermissions() {
-      DirPerms dirPerms = DirPerms.all();
-      FilePerms filePerms = FilePerms.all();
-
+    @DisplayName("should create read-write preopen dir with FsPerms")
+    void shouldCreatePreopenDirWithReadWriteFsPerms() {
       WasiPreview2Config.PreopenDir dir =
-          new WasiPreview2Config.PreopenDir(Paths.get("/tmp"), "/sandbox", dirPerms, filePerms);
+          new WasiPreview2Config.PreopenDir(Paths.get("/tmp"), "/sandbox", FsPerms.READ_WRITE);
 
+      assertEquals(FsPerms.READ_WRITE, dir.getFsPerms());
       assertFalse(dir.isReadOnly());
     }
   }

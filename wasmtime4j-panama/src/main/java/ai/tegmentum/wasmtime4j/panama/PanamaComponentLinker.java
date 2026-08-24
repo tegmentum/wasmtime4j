@@ -788,8 +788,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
                   nativeLinker,
                   hostPathPtr,
                   guestPathPtr,
-                  dir.getDirPerms().getBits(),
-                  dir.getFilePerms().getBits());
+                  dir.getFsPerms().getValue());
           if (result != 0) {
             LOGGER.warning(
                 "Failed to add preopened dir '"

@@ -742,8 +742,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
     linker_handle: jlong,
     host_path: JString,
     guest_path: JString,
-    dir_perms_bits: jint,
-    file_perms_bits: jint,
+    fs_perms_code: jint,
 ) {
     if linker_handle == 0 {
         return;
@@ -764,12 +763,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
         Err(_) => return,
     };
 
-    linker.add_wasi_preopen_dir(
-        host_str,
-        guest_str,
-        dir_perms_bits as u32,
-        file_perms_bits as u32,
-    );
+    linker.add_wasi_preopen_dir(host_str, guest_str, fs_perms_code as u32);
 }
 
 // =============================================================================

@@ -35,9 +35,9 @@ class SocketAddrUseTest {
   class EnumStructure {
 
     @Test
-    @DisplayName("should have exactly 5 values")
-    void shouldHaveExactly5Values() {
-      assertEquals(5, SocketAddrUse.values().length);
+    @DisplayName("should have exactly 7 values")
+    void shouldHaveExactly7Values() {
+      assertEquals(7, SocketAddrUse.values().length);
     }
 
     @Test
@@ -46,10 +46,12 @@ class SocketAddrUseTest {
       Set<SocketAddrUse> values = new HashSet<>(Arrays.asList(SocketAddrUse.values()));
 
       assertTrue(values.contains(SocketAddrUse.TCP_BIND));
+      assertTrue(values.contains(SocketAddrUse.TCP_LISTEN));
+      assertTrue(values.contains(SocketAddrUse.TCP_ACCEPT));
       assertTrue(values.contains(SocketAddrUse.TCP_CONNECT));
       assertTrue(values.contains(SocketAddrUse.UDP_BIND));
-      assertTrue(values.contains(SocketAddrUse.UDP_CONNECT));
-      assertTrue(values.contains(SocketAddrUse.UDP_OUTGOING_DATAGRAM));
+      assertTrue(values.contains(SocketAddrUse.UDP_SEND));
+      assertTrue(values.contains(SocketAddrUse.UDP_RECEIVE));
     }
   }
 
@@ -64,27 +66,39 @@ class SocketAddrUseTest {
     }
 
     @Test
-    @DisplayName("TCP_CONNECT should have value 1")
-    void tcpConnectShouldHaveValue1() {
-      assertEquals(1, SocketAddrUse.TCP_CONNECT.getValue());
+    @DisplayName("TCP_LISTEN should have value 1")
+    void tcpListenShouldHaveValue1() {
+      assertEquals(1, SocketAddrUse.TCP_LISTEN.getValue());
     }
 
     @Test
-    @DisplayName("UDP_BIND should have value 2")
-    void udpBindShouldHaveValue2() {
-      assertEquals(2, SocketAddrUse.UDP_BIND.getValue());
+    @DisplayName("TCP_ACCEPT should have value 2")
+    void tcpAcceptShouldHaveValue2() {
+      assertEquals(2, SocketAddrUse.TCP_ACCEPT.getValue());
     }
 
     @Test
-    @DisplayName("UDP_CONNECT should have value 3")
-    void udpConnectShouldHaveValue3() {
-      assertEquals(3, SocketAddrUse.UDP_CONNECT.getValue());
+    @DisplayName("TCP_CONNECT should have value 3")
+    void tcpConnectShouldHaveValue3() {
+      assertEquals(3, SocketAddrUse.TCP_CONNECT.getValue());
     }
 
     @Test
-    @DisplayName("UDP_OUTGOING_DATAGRAM should have value 4")
-    void udpOutgoingDatagramShouldHaveValue4() {
-      assertEquals(4, SocketAddrUse.UDP_OUTGOING_DATAGRAM.getValue());
+    @DisplayName("UDP_BIND should have value 4")
+    void udpBindShouldHaveValue4() {
+      assertEquals(4, SocketAddrUse.UDP_BIND.getValue());
+    }
+
+    @Test
+    @DisplayName("UDP_SEND should have value 5")
+    void udpSendShouldHaveValue5() {
+      assertEquals(5, SocketAddrUse.UDP_SEND.getValue());
+    }
+
+    @Test
+    @DisplayName("UDP_RECEIVE should have value 6")
+    void udpReceiveShouldHaveValue6() {
+      assertEquals(6, SocketAddrUse.UDP_RECEIVE.getValue());
     }
 
     @Test
@@ -105,16 +119,18 @@ class SocketAddrUseTest {
     @DisplayName("should return correct constant for each value")
     void shouldReturnCorrectConstantForEachValue() {
       assertEquals(SocketAddrUse.TCP_BIND, SocketAddrUse.fromValue(0));
-      assertEquals(SocketAddrUse.TCP_CONNECT, SocketAddrUse.fromValue(1));
-      assertEquals(SocketAddrUse.UDP_BIND, SocketAddrUse.fromValue(2));
-      assertEquals(SocketAddrUse.UDP_CONNECT, SocketAddrUse.fromValue(3));
-      assertEquals(SocketAddrUse.UDP_OUTGOING_DATAGRAM, SocketAddrUse.fromValue(4));
+      assertEquals(SocketAddrUse.TCP_LISTEN, SocketAddrUse.fromValue(1));
+      assertEquals(SocketAddrUse.TCP_ACCEPT, SocketAddrUse.fromValue(2));
+      assertEquals(SocketAddrUse.TCP_CONNECT, SocketAddrUse.fromValue(3));
+      assertEquals(SocketAddrUse.UDP_BIND, SocketAddrUse.fromValue(4));
+      assertEquals(SocketAddrUse.UDP_SEND, SocketAddrUse.fromValue(5));
+      assertEquals(SocketAddrUse.UDP_RECEIVE, SocketAddrUse.fromValue(6));
     }
 
     @Test
     @DisplayName("should throw for invalid value")
     void shouldThrowForInvalidValue() {
-      assertThrows(IllegalArgumentException.class, () -> SocketAddrUse.fromValue(5));
+      assertThrows(IllegalArgumentException.class, () -> SocketAddrUse.fromValue(7));
     }
 
     @Test
@@ -140,11 +156,12 @@ class SocketAddrUseTest {
     @DisplayName("valueOf should return correct constant")
     void valueOfShouldReturnCorrectConstant() {
       assertEquals(SocketAddrUse.TCP_BIND, SocketAddrUse.valueOf("TCP_BIND"));
+      assertEquals(SocketAddrUse.TCP_LISTEN, SocketAddrUse.valueOf("TCP_LISTEN"));
+      assertEquals(SocketAddrUse.TCP_ACCEPT, SocketAddrUse.valueOf("TCP_ACCEPT"));
       assertEquals(SocketAddrUse.TCP_CONNECT, SocketAddrUse.valueOf("TCP_CONNECT"));
       assertEquals(SocketAddrUse.UDP_BIND, SocketAddrUse.valueOf("UDP_BIND"));
-      assertEquals(SocketAddrUse.UDP_CONNECT, SocketAddrUse.valueOf("UDP_CONNECT"));
-      assertEquals(
-          SocketAddrUse.UDP_OUTGOING_DATAGRAM, SocketAddrUse.valueOf("UDP_OUTGOING_DATAGRAM"));
+      assertEquals(SocketAddrUse.UDP_SEND, SocketAddrUse.valueOf("UDP_SEND"));
+      assertEquals(SocketAddrUse.UDP_RECEIVE, SocketAddrUse.valueOf("UDP_RECEIVE"));
     }
 
     @Test
@@ -162,10 +179,12 @@ class SocketAddrUseTest {
     @DisplayName("name should return correct string for each constant")
     void nameShouldReturnCorrectString() {
       assertEquals("TCP_BIND", SocketAddrUse.TCP_BIND.name());
+      assertEquals("TCP_LISTEN", SocketAddrUse.TCP_LISTEN.name());
+      assertEquals("TCP_ACCEPT", SocketAddrUse.TCP_ACCEPT.name());
       assertEquals("TCP_CONNECT", SocketAddrUse.TCP_CONNECT.name());
       assertEquals("UDP_BIND", SocketAddrUse.UDP_BIND.name());
-      assertEquals("UDP_CONNECT", SocketAddrUse.UDP_CONNECT.name());
-      assertEquals("UDP_OUTGOING_DATAGRAM", SocketAddrUse.UDP_OUTGOING_DATAGRAM.name());
+      assertEquals("UDP_SEND", SocketAddrUse.UDP_SEND.name());
+      assertEquals("UDP_RECEIVE", SocketAddrUse.UDP_RECEIVE.name());
     }
   }
 }

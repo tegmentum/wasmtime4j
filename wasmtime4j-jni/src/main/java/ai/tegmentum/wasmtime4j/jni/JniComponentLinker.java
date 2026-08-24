@@ -545,14 +545,12 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
             cfg.getPreopenDirs() == null ? java.util.Collections.emptyList() : cfg.getPreopenDirs();
         final String[] hostPaths = new String[preopens.size()];
         final String[] guestPaths = new String[preopens.size()];
-        final int[] dirPermBits = new int[preopens.size()];
-        final int[] filePermBits = new int[preopens.size()];
+        final int[] fsPermsCodes = new int[preopens.size()];
         for (int i = 0; i < preopens.size(); i++) {
           final WasiPreview2Config.PreopenDir dir = preopens.get(i);
           hostPaths[i] = dir.getHostPath().toAbsolutePath().toString();
           guestPaths[i] = dir.getGuestPath();
-          dirPermBits[i] = dir.getDirPerms().getBits();
-          filePermBits[i] = dir.getFilePerms().getBits();
+          fsPermsCodes[i] = dir.getFsPerms().getValue();
         }
         final java.util.Map<String, String> envMap =
             cfg.getEnv() == null ? java.util.Collections.emptyMap() : cfg.getEnv();
@@ -586,8 +584,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
                 componentHandle,
                 hostPaths,
                 guestPaths,
-                dirPermBits,
-                filePermBits,
+                fsPermsCodes,
                 envKeys,
                 envVals,
                 cfg.isInheritStdout() || cfg.isInheritStdio(),
@@ -892,8 +889,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
             nativeHandle,
             dir.getHostPath().toAbsolutePath().toString(),
             dir.getGuestPath(),
-            dir.getDirPerms().getBits(),
-            dir.getFilePerms().getBits());
+            dir.getFsPerms().getValue());
       }
     }
 
@@ -1522,7 +1518,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   private static native void nativeAddWasiEnv(long linkerHandle, String key, String value);
 
   private static native void nativeAddWasiPreopenDir(
-      long linkerHandle, String hostPath, String guestPath, int dirPermsBits, int filePermsBits);
+      long linkerHandle, String hostPath, String guestPath, int fsPermsCode);
 
   private static native void nativeSetWasiAllowNetwork(long linkerHandle, boolean allow);
 

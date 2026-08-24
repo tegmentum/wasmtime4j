@@ -389,6 +389,12 @@ pub fn val_to_component_value(val: &Val) -> ComponentValue {
             // a mismatched build configuration.
             panic!("component model map<K, V> values are not supported")
         }
+        // wasmtime 48 added `list<T, N>` (fixed-length lists) as a distinct
+        // schema type. At the value layer they carry the same shape as a plain
+        // list; the `N` constraint is validated against the type descriptor.
+        Val::FixedLengthList(items) => {
+            ComponentValue::List(items.iter().map(val_to_component_value).collect())
+        }
     }
 }
 
@@ -765,7 +771,10 @@ pub struct WasiP2Config {
     /// Stdin bytes (if set, overrides inherit_stdin)
     pub stdin_bytes: Option<Vec<u8>>,
     /// Preopened directories (host_path, guest_path, dir_perms_bits, file_perms_bits)
-    pub preopened_dirs: Vec<(String, String, u32, u32)>,
+    /// `(host_path, guest_path, FsPerms wire code)` — the wire code matches
+    /// `FsPerms.java#getValue()` (0 = READ_ONLY, 1 = READ_WRITE) and is
+    /// decoded via `wasi_common_config::decode_fs_perms`.
+    pub preopened_dirs: Vec<(String, String, u32)>,
     /// Allow network access
     pub allow_network: bool,
     /// Allow TCP sockets
@@ -898,13 +907,12 @@ impl WasiP2Config {
         // Socket address check callback
         crate::wasi_common_config::apply_socket_addr_check(&mut builder, self.socket_addr_check);
 
-        // Preopened directories with granular permissions
-        for (host_path, guest_path, dir_bits, file_bits) in &self.preopened_dirs {
+        // Preopened directories with access mode
+        for (host_path, guest_path, fs_perms_code) in &self.preopened_dirs {
             let path = std::path::Path::new(host_path);
             if path.exists() && path.is_dir() {
-                let (dir_perms, file_perms) =
-                    crate::wasi_common_config::decode_permissions(*dir_bits, *file_bits);
-                if let Err(e) = builder.preopened_dir(path, guest_path, dir_perms, file_perms) {
+                let fs_perms = crate::wasi_common_config::decode_fs_perms(*fs_perms_code);
+                if let Err(e) = builder.preopened_dir(path, guest_path, fs_perms) {
                     log::warn!("Failed to preopen directory {}: {}", host_path, e);
                 }
             }
@@ -1083,20 +1091,19 @@ impl ComponentLinker {
         self.wasi_p2_config.inherit_stdio = inherit;
     }
 
-    /// Add a preopened directory with permission bits
+    /// Register a preopened directory with an access mode.
+    ///
+    /// `fs_perms_code` is the FFI wire form of `FsPerms.java` (0 = READ_ONLY,
+    /// 1 = READ_WRITE); it is decoded when the WASI context is materialized.
     pub fn add_wasi_preopen_dir(
         &mut self,
         host_path: String,
         guest_path: String,
-        dir_perms_bits: u32,
-        file_perms_bits: u32,
+        fs_perms_code: u32,
     ) {
-        self.wasi_p2_config.preopened_dirs.push((
-            host_path,
-            guest_path,
-            dir_perms_bits,
-            file_perms_bits,
-        ));
+        self.wasi_p2_config
+            .preopened_dirs
+            .push((host_path, guest_path, fs_perms_code));
     }
 
     /// Set whether network access is allowed
@@ -3494,14 +3501,13 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_inherit_stdio(
     FFI_SUCCESS
 }
 
-/// Add a preopened directory with permission bits
+/// Add a preopened directory with an access mode (wasmtime 48 FsPerms wire code).
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_linker_add_wasi_preopen_dir(
     linker_ptr: *mut c_void,
     host_path: *const c_char,
     guest_path: *const c_char,
-    dir_perms_bits: c_int,
-    file_perms_bits: c_int,
+    fs_perms_code: c_int,
 ) -> c_int {
     if linker_ptr.is_null() || host_path.is_null() || guest_path.is_null() {
         return FFI_ERROR;
@@ -3519,12 +3525,7 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_add_wasi_preopen_dir(
         Err(_) => return FFI_ERROR,
     };
 
-    linker.add_wasi_preopen_dir(
-        host_str,
-        guest_str,
-        dir_perms_bits as u32,
-        file_perms_bits as u32,
-    );
+    linker.add_wasi_preopen_dir(host_str, guest_str, fs_perms_code as u32);
     FFI_SUCCESS
 }
 

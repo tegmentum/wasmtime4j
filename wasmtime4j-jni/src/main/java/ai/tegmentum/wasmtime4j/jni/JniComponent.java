@@ -122,8 +122,12 @@ public final class JniComponent {
 
   /**
    * Instantiate a component with a host-supplied WASI capability policy and register it in the
-   * given engine. Preopens are parallel arrays (host path, guest path, dir-perm bits, file-perm
-   * bits); env is parallel key/value arrays. Anything not granted is denied.
+   * given engine. Preopens are parallel arrays (host path, guest path, FsPerms code); env is
+   * parallel key/value arrays. Anything not granted is denied.
+   *
+   * <p>The {@code fsPermsCodes} entries carry {@link ai.tegmentum.wasmtime4j.wasi.FsPerms#getValue()}
+   * values (0 = READ_ONLY, 1 = READ_WRITE), matching upstream wasmtime 48's collapsed FsPerms
+   * enum.
    *
    * @return native component instance id or 0 on failure
    */
@@ -132,8 +136,7 @@ public final class JniComponent {
       long componentHandle,
       String[] hostPaths,
       String[] guestPaths,
-      int[] dirPermBits,
-      int[] filePermBits,
+      int[] fsPermsCodes,
       String[] envKeys,
       String[] envVals,
       boolean inheritStdout,

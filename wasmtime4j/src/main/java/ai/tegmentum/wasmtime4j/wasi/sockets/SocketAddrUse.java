@@ -22,24 +22,36 @@ package ai.tegmentum.wasmtime4j.wasi.sockets;
  * performed with the socket address, allowing fine-grained control over which network operations
  * are permitted.
  *
- * @since 1.0.0
+ * <p>Constants and their FFI codes are aligned with the upstream
+ * {@code wasmtime_wasi::sockets::SocketAddrUse} enum. Wasmtime 48 dropped the standalone
+ * {@code UDP_CONNECT} check (UDP connect now piggybacks on {@code UDP_BIND}) and renamed the
+ * outgoing-datagram check to {@code UDP_SEND}; a symmetric {@code UDP_RECEIVE} check, plus
+ * {@code TCP_LISTEN} and {@code TCP_ACCEPT}, are new.
+ *
+ * @since 2.0.0
  */
 public enum SocketAddrUse {
 
   /** Binding a TCP socket to a local address. */
   TCP_BIND(0),
 
+  /** Putting a TCP socket into listener mode. */
+  TCP_LISTEN(1),
+
+  /** Accepting a new client TCP socket. */
+  TCP_ACCEPT(2),
+
   /** Connecting a TCP socket to a remote address. */
-  TCP_CONNECT(1),
+  TCP_CONNECT(3),
 
   /** Binding a UDP socket to a local address. */
-  UDP_BIND(2),
+  UDP_BIND(4),
 
-  /** Connecting a UDP socket to a remote address. */
-  UDP_CONNECT(3),
+  /** Sending a datagram on a UDP socket. */
+  UDP_SEND(5),
 
-  /** Sending a datagram on a non-connected UDP socket. */
-  UDP_OUTGOING_DATAGRAM(4);
+  /** Receiving a datagram on a UDP socket. */
+  UDP_RECEIVE(6);
 
   private final int value;
 

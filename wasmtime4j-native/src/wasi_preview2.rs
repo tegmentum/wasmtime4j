@@ -131,8 +131,11 @@ pub struct WasiPreview2Config {
     pub inherit_stdout: bool,
     /// Whether to inherit stderr individually
     pub inherit_stderr: bool,
-    /// Preopened directories (host_path, guest_path, dir_perms_bits, file_perms_bits)
-    pub preopened_dirs: Vec<(String, String, u32, u32)>,
+    /// Preopened directories: `(host_path, guest_path, FsPerms wire code)`.
+    /// The wire code matches `FsPerms.java#getValue()` (0 = READ_ONLY,
+    /// 1 = READ_WRITE) and is decoded via
+    /// `wasi_common_config::decode_fs_perms`.
+    pub preopened_dirs: Vec<(String, String, u32)>,
     /// Allow blocking the current thread
     pub allow_blocking_current_thread: bool,
     /// Insecure random seed (if set)
@@ -635,12 +638,11 @@ impl WasiPreview2Context {
             builder.envs(&env_pairs);
         }
 
-        // Configure preopened directories with granular permissions
-        for (host_path, guest_path, dir_bits, file_bits) in &self.config.preopened_dirs {
-            let (dir_perms, file_perms) =
-                crate::wasi_common_config::decode_permissions(*dir_bits, *file_bits);
+        // Configure preopened directories with access mode
+        for (host_path, guest_path, fs_perms_code) in &self.config.preopened_dirs {
+            let fs_perms = crate::wasi_common_config::decode_fs_perms(*fs_perms_code);
             builder
-                .preopened_dir(host_path, guest_path, dir_perms, file_perms)
+                .preopened_dir(host_path, guest_path, fs_perms)
                 .map_err(|e| WasmtimeError::Wasi {
                     message: format!(
                         "Failed to preopen directory '{}' as '{}': {}",

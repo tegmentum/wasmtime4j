@@ -52,6 +52,12 @@ public enum ComponentType {
   STRING,
   /** Homogeneous list of elements. */
   LIST,
+  /**
+   * Homogeneous list of elements with a schema-level fixed length ({@code list<T, N>}, wasmtime
+   * 48+). At runtime the list carries the same shape as {@link #LIST}; the length is enforced by
+   * the type descriptor.
+   */
+  FIXED_LENGTH_LIST,
   /** Named fields with heterogeneous types. */
   RECORD,
   /** Anonymous sequence of heterogeneous types. */
@@ -148,6 +154,7 @@ public enum ComponentType {
    */
   public boolean isCompound() {
     return this == LIST
+        || this == FIXED_LENGTH_LIST
         || this == RECORD
         || this == TUPLE
         || this == VARIANT

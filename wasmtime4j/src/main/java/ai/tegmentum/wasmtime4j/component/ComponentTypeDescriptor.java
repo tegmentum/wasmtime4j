@@ -159,6 +159,15 @@ public interface ComponentTypeDescriptor {
    */
   Optional<ComponentTypeDescriptor> getStreamElementType();
 
+  /**
+   * Gets the schema-level element count for a fixed-length list ({@code list<T, N>}, wasmtime
+   * 48+).
+   *
+   * @return the required list length
+   * @throws IllegalStateException if this is not a fixed-length list type
+   */
+  long getFixedLength();
+
   // ========== Factory methods for primitive types ==========
 
   /** Creates a bool type descriptor. */
@@ -245,6 +254,24 @@ public interface ComponentTypeDescriptor {
    */
   static ComponentTypeDescriptor list(final ComponentTypeDescriptor elementType) {
     return new ListImpl(elementType);
+  }
+
+  /**
+   * Creates a fixed-length list type descriptor ({@code list<T, N>}, wasmtime 48+).
+   *
+   * @param elementType the element type
+   * @param length the required list length (must be non-negative and fit in an unsigned 32-bit
+   *     integer)
+   * @return a new fixed-length list type descriptor
+   * @throws IllegalArgumentException if {@code length} is negative or exceeds {@code 2^32 - 1}
+   */
+  static ComponentTypeDescriptor fixedLengthList(
+      final ComponentTypeDescriptor elementType, final long length) {
+    if (length < 0L || length > 0xFFFF_FFFFL) {
+      throw new IllegalArgumentException(
+          "Fixed-length list length must be in [0, 2^32 - 1]: " + length);
+    }
+    return new FixedLengthListImpl(elementType, length);
   }
 
   /**
@@ -475,6 +502,11 @@ public interface ComponentTypeDescriptor {
     }
 
     @Override
+    public long getFixedLength() {
+      throw new IllegalStateException("Not a fixed-length list type");
+    }
+
+    @Override
     public String toString() {
       return type.name().toLowerCase(Locale.ROOT);
     }
@@ -568,6 +600,11 @@ public interface ComponentTypeDescriptor {
     @Override
     public Optional<ComponentTypeDescriptor> getStreamElementType() {
       return inner.getStreamElementType();
+    }
+
+    @Override
+    public long getFixedLength() {
+      return inner.getFixedLength();
     }
 
     @Override
@@ -665,8 +702,114 @@ public interface ComponentTypeDescriptor {
     }
 
     @Override
+    public long getFixedLength() {
+      throw new IllegalStateException("Not a fixed-length list type");
+    }
+
+    @Override
     public String toString() {
       return "list<" + elementType + ">";
+    }
+  }
+
+  /** Fixed-length list type descriptor ({@code list<T, N>}, wasmtime 48+). */
+  final class FixedLengthListImpl implements ComponentTypeDescriptor {
+    private final ComponentTypeDescriptor elementType;
+    private final long length;
+
+    FixedLengthListImpl(final ComponentTypeDescriptor elementType, final long length) {
+      this.elementType = elementType;
+      this.length = length;
+    }
+
+    @Override
+    public ComponentType getType() {
+      return ComponentType.FIXED_LENGTH_LIST;
+    }
+
+    @Override
+    public Optional<String> getName() {
+      return Optional.empty();
+    }
+
+    @Override
+    public ComponentTypeDescriptor getElementType() {
+      return elementType;
+    }
+
+    @Override
+    public Map<String, ComponentTypeDescriptor> getRecordFields() {
+      throw new IllegalStateException("Not a record type");
+    }
+
+    @Override
+    public List<ComponentTypeDescriptor> getTupleElements() {
+      throw new IllegalStateException("Not a tuple type");
+    }
+
+    @Override
+    public Map<String, Optional<ComponentTypeDescriptor>> getVariantCases() {
+      throw new IllegalStateException("Not a variant type");
+    }
+
+    @Override
+    public List<String> getEnumCases() {
+      throw new IllegalStateException("Not an enum type");
+    }
+
+    @Override
+    public ComponentTypeDescriptor getOptionType() {
+      throw new IllegalStateException("Not an option type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getResultOkType() {
+      throw new IllegalStateException("Not a result type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getResultErrType() {
+      throw new IllegalStateException("Not a result type");
+    }
+
+    @Override
+    public List<String> getFlagNames() {
+      throw new IllegalStateException("Not a flags type");
+    }
+
+    @Override
+    public String getResourceTypeName() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public long getResourceTypeId() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public boolean isResourceOwned() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getFuturePayloadType() {
+      throw new IllegalStateException("Not a future type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getStreamElementType() {
+      throw new IllegalStateException("Not a stream type");
+    }
+
+    @Override
+    public long getFixedLength() {
+      return length;
+    }
+
+    @Override
+    public String toString() {
+      return "list<" + elementType + ", " + length + ">";
     }
   }
 
@@ -756,6 +899,11 @@ public interface ComponentTypeDescriptor {
     @Override
     public Optional<ComponentTypeDescriptor> getStreamElementType() {
       throw new IllegalStateException("Not a stream type");
+    }
+
+    @Override
+    public long getFixedLength() {
+      throw new IllegalStateException("Not a fixed-length list type");
     }
 
     @Override
@@ -855,6 +1003,11 @@ public interface ComponentTypeDescriptor {
     }
 
     @Override
+    public long getFixedLength() {
+      throw new IllegalStateException("Not a fixed-length list type");
+    }
+
+    @Override
     public String toString() {
       final String ok = okType != null ? okType.toString() : "_";
       final String err = errType != null ? errType.toString() : "_";
@@ -951,6 +1104,11 @@ public interface ComponentTypeDescriptor {
     }
 
     @Override
+    public long getFixedLength() {
+      throw new IllegalStateException("Not a fixed-length list type");
+    }
+
+    @Override
     public String toString() {
       return payloadType != null ? "future<" + payloadType + ">" : "future";
     }
@@ -1042,6 +1200,11 @@ public interface ComponentTypeDescriptor {
     @Override
     public Optional<ComponentTypeDescriptor> getStreamElementType() {
       return Optional.ofNullable(elementType);
+    }
+
+    @Override
+    public long getFixedLength() {
+      throw new IllegalStateException("Not a fixed-length list type");
     }
 
     @Override
@@ -1146,6 +1309,11 @@ public interface ComponentTypeDescriptor {
     @Override
     public Optional<ComponentTypeDescriptor> getStreamElementType() {
       throw new IllegalStateException("Not a stream type");
+    }
+
+    @Override
+    public long getFixedLength() {
+      throw new IllegalStateException("Not a fixed-length list type");
     }
 
     @Override
@@ -1343,6 +1511,11 @@ public interface ComponentTypeDescriptor {
     @Override
     public Optional<ComponentTypeDescriptor> getStreamElementType() {
       throw new IllegalStateException("Not a stream type");
+    }
+
+    @Override
+    public long getFixedLength() {
+      throw new IllegalStateException("Not a fixed-length list type");
     }
   }
 }

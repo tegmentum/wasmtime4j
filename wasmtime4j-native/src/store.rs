@@ -238,10 +238,13 @@ impl Clone for StoreData {
     }
 }
 
+// wasmtime-wasi-http 48 relocated `WasiHttpView` and `WasiHttpCtxView` from
+// the `p2` submodule to the crate root; the `p2` submodule is now the
+// implementation namespace (add_to_linker_async, etc.).
 #[cfg(feature = "wasi-http")]
-impl wasmtime_wasi_http::p2::WasiHttpView for StoreData {
-    fn http(&mut self) -> wasmtime_wasi_http::p2::WasiHttpCtxView<'_> {
-        wasmtime_wasi_http::p2::WasiHttpCtxView {
+impl wasmtime_wasi_http::WasiHttpView for StoreData {
+    fn http(&mut self) -> wasmtime_wasi_http::WasiHttpCtxView<'_> {
+        wasmtime_wasi_http::WasiHttpCtxView {
             ctx: self.wasi_http_ctx.get_or_insert_with(WasiHttpCtx::new),
             table: &mut self.resource_table,
             hooks: &mut self.wasi_http_hooks,

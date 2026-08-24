@@ -1,8 +1,10 @@
 //! Shared WASI configuration helpers used by both `component::linker::WasiP2Config`
 //! and `wasi_preview2::WasiPreview2Config` to avoid code duplication.
 
+// wasmtime 48 collapsed the DirPerms/FilePerms bit-flag pair into a single
+// two-value FsPerms enum (ReadOnly / ReadWrite).
 #[cfg(feature = "wasi")]
-use wasmtime_wasi::{DirPerms, FilePerms, WasiCtxBuilder};
+use wasmtime_wasi::{FsPerms, WasiCtxBuilder};
 
 #[cfg(feature = "wasi")]
 use crate::component::CallbackSocketAddrCheck;
@@ -37,12 +39,18 @@ pub fn apply_socket_addr_check(
                 SocketAddr::V4(v4) => (4i32, v4.ip().octets().to_vec(), v4.port()),
                 SocketAddr::V6(v6) => (6i32, v6.ip().octets().to_vec(), v6.port()),
             };
+            // FFI codes must stay in sync with `SocketAddrUse.java`. wasmtime 48
+            // reshaped this enum: `UdpConnect` is gone (UDP connect now piggy-
+            // backs on `UdpBind`) and `UdpOutgoingDatagram` was renamed to
+            // `UdpSend`; `TcpListen`, `TcpAccept`, and `UdpReceive` are new.
             let use_type = match reason {
                 wasmtime_wasi::sockets::SocketAddrUse::TcpBind => 0i32,
-                wasmtime_wasi::sockets::SocketAddrUse::TcpConnect => 1,
-                wasmtime_wasi::sockets::SocketAddrUse::UdpBind => 2,
-                wasmtime_wasi::sockets::SocketAddrUse::UdpConnect => 3,
-                wasmtime_wasi::sockets::SocketAddrUse::UdpOutgoingDatagram => 4,
+                wasmtime_wasi::sockets::SocketAddrUse::TcpListen => 1,
+                wasmtime_wasi::sockets::SocketAddrUse::TcpAccept => 2,
+                wasmtime_wasi::sockets::SocketAddrUse::TcpConnect => 3,
+                wasmtime_wasi::sockets::SocketAddrUse::UdpBind => 4,
+                wasmtime_wasi::sockets::SocketAddrUse::UdpSend => 5,
+                wasmtime_wasi::sockets::SocketAddrUse::UdpReceive => 6,
             };
             let result = (check.check_fn)(
                 check.callback_id,
@@ -88,22 +96,15 @@ pub fn apply_clock_and_rng_config(
     }
 }
 
-/// Converts permission bit fields to `DirPerms` and `FilePerms`.
+/// Converts the FFI access-mode code sent from Java to a wasmtime `FsPerms`.
+///
+/// Wire codes must stay in sync with `FsPerms.java`: 0 = `READ_ONLY`, 1 =
+/// `READ_WRITE`. Any unknown value falls back to `READ_ONLY` so a stale caller
+/// cannot inadvertently escalate a preopen to read/write.
 #[cfg(feature = "wasi")]
-pub fn decode_permissions(dir_bits: u32, file_bits: u32) -> (DirPerms, FilePerms) {
-    let mut dir_perms = DirPerms::empty();
-    if dir_bits & 0x1 != 0 {
-        dir_perms |= DirPerms::READ;
+pub fn decode_fs_perms(code: u32) -> FsPerms {
+    match code {
+        1 => FsPerms::ReadWrite,
+        _ => FsPerms::ReadOnly,
     }
-    if dir_bits & 0x2 != 0 {
-        dir_perms |= DirPerms::MUTATE;
-    }
-    let mut file_perms = FilePerms::empty();
-    if file_bits & 0x1 != 0 {
-        file_perms |= FilePerms::READ;
-    }
-    if file_bits & 0x2 != 0 {
-        file_perms |= FilePerms::WRITE;
-    }
-    (dir_perms, file_perms)
 }

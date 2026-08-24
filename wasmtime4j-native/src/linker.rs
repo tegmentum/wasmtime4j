@@ -1572,8 +1572,11 @@ pub mod core {
         let store_guard = store.try_lock_store()?;
         // Capture type with store context before extern_item is moved
         let import_type = super::extern_to_import_type(&extern_item, &*store_guard);
+        // wasmtime 48 removed `Linker::define_name`; the equivalent is
+        // `define(store, "", name, extern)` — an empty module name means the
+        // import resolves by name alone.
         linker_guard
-            .define_name(&*store_guard, name, extern_item)
+            .define(&*store_guard, "", name, extern_item)
             .map_err(|e| crate::error::WasmtimeError::Linker {
                 message: format!("Failed to define name '{}': {}", name, e),
             })?;

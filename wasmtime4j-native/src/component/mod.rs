@@ -170,11 +170,13 @@ impl wasmtime_wasi::WasiView for ComponentStoreData {
     }
 }
 
-// Implement WasiHttpView for ComponentStoreData to enable WASI HTTP support
+// Implement WasiHttpView for ComponentStoreData to enable WASI HTTP support.
+// wasmtime-wasi-http 48 relocated `WasiHttpView` and `WasiHttpCtxView` from
+// the `p2` submodule to the crate root.
 #[cfg(feature = "wasi-http")]
-impl wasmtime_wasi_http::p2::WasiHttpView for ComponentStoreData {
-    fn http(&mut self) -> wasmtime_wasi_http::p2::WasiHttpCtxView<'_> {
-        wasmtime_wasi_http::p2::WasiHttpCtxView {
+impl wasmtime_wasi_http::WasiHttpView for ComponentStoreData {
+    fn http(&mut self) -> wasmtime_wasi_http::WasiHttpCtxView<'_> {
+        wasmtime_wasi_http::WasiHttpCtxView {
             ctx: self
                 .wasi_http_ctx
                 .get_or_insert_with(wasmtime_wasi_http::WasiHttpCtx::new),
@@ -1719,6 +1721,13 @@ pub mod core {
                 type_to_json(json, &map_ty.key());
                 json.push_str(",\"value\":");
                 type_to_json(json, &map_ty.value());
+                json.push('}');
+            }
+            Type::FixedLengthList(fll) => {
+                json.push_str("{\"type\":\"fixed_length_list\",\"element\":");
+                type_to_json(json, &fll.ty());
+                json.push_str(",\"length\":");
+                json.push_str(&fll.len().to_string());
                 json.push('}');
             }
         }

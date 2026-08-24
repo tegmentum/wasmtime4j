@@ -17,7 +17,13 @@ use std::sync::{Arc, Mutex, RwLock};
 use wasmtime::Linker;
 use wasmtime_wasi::p1::WasiP1Ctx;
 use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
-use wasmtime_wasi::{DirPerms, FilePerms, WasiCtxBuilder};
+// wasmtime 48 collapsed the DirPerms/FilePerms bit-flag pair into a single
+// two-value `FsPerms` enum (ReadOnly / ReadWrite). The wasmtime4j-internal
+// `WasiDirPermissions`/`WasiFilePermissions` structs are retained as the
+// domain-model shape callers already build against; `to_fs_perms` collapses
+// them to an `FsPerms` at the wasmtime boundary — any write bit anywhere
+// implies READ_WRITE.
+use wasmtime_wasi::{FsPerms, WasiCtxBuilder};
 
 /// Thread-safe wrapper around WASI context with comprehensive configuration
 pub struct WasiContext {
@@ -392,31 +398,14 @@ impl Default for StdioConfig {
     }
 }
 
-impl WasiDirPermissions {
-    /// Convert to wasmtime_wasi DirPerms
-    pub fn to_wasmtime_perms(&self) -> DirPerms {
-        let mut perms = DirPerms::empty();
-        if self.read {
-            perms |= DirPerms::READ;
-        }
-        if self.mutate {
-            perms |= DirPerms::MUTATE;
-        }
-        perms
-    }
-}
-
-impl WasiFilePermissions {
-    /// Convert to wasmtime_wasi FilePerms
-    pub fn to_wasmtime_perms(&self) -> FilePerms {
-        let mut perms = FilePerms::empty();
-        if self.read {
-            perms |= FilePerms::READ;
-        }
-        if self.write {
-            perms |= FilePerms::WRITE;
-        }
-        perms
+/// Collapses a `(WasiDirPermissions, WasiFilePermissions)` pair to a single
+/// wasmtime 48 `FsPerms`. Any mutate/write bit anywhere in the pair yields
+/// `ReadWrite`; otherwise the mapping is `ReadOnly`.
+pub fn to_fs_perms(dir: &WasiDirPermissions, file: &WasiFilePermissions) -> FsPerms {
+    if dir.mutate || file.write {
+        FsPerms::ReadWrite
+    } else {
+        FsPerms::ReadOnly
     }
 }
 
@@ -509,8 +498,7 @@ impl WasiContext {
                 .preopened_dir(
                     &mapping.host_path,
                     guest,
-                    mapping.dir_perms.to_wasmtime_perms(),
-                    mapping.file_perms.to_wasmtime_perms(),
+                    to_fs_perms(&mapping.dir_perms, &mapping.file_perms),
                 )
                 .map_err(|e| WasmtimeError::Wasi {
                     message: format!("Failed to add directory mapping {}: {}", guest, e),
@@ -522,8 +510,7 @@ impl WasiContext {
             .preopened_dir(
                 &host_path,
                 &guest_path,
-                dir_perms.to_wasmtime_perms(),
-                file_perms.to_wasmtime_perms(),
+                to_fs_perms(&dir_perms, &file_perms),
             )
             .map_err(|e| WasmtimeError::Wasi {
                 message: format!("Failed to add directory mapping {}: {}", guest_path, e),
@@ -683,8 +670,7 @@ impl WasiContext {
                 .preopened_dir(
                     &mapping.host_path,
                     guest_path,
-                    mapping.dir_perms.to_wasmtime_perms(),
-                    mapping.file_perms.to_wasmtime_perms(),
+                    to_fs_perms(&mapping.dir_perms, &mapping.file_perms),
                 )
                 .map_err(|e| WasmtimeError::Wasi {
                     message: format!("Failed to add directory mapping {}: {}", guest_path, e),
@@ -2191,23 +2177,30 @@ mod tests {
 
     #[test]
     fn test_permission_conversions() {
-        let dir_perms = WasiDirPermissions {
+        // Read+mutate on dir OR write on file → ReadWrite.
+        let dir_rw = WasiDirPermissions {
             read: true,
             mutate: true,
         };
-
-        let wasi_perms = dir_perms.to_wasmtime_perms();
-        assert!(wasi_perms.contains(DirPerms::READ));
-        assert!(wasi_perms.contains(DirPerms::MUTATE));
-
-        let file_perms = WasiFilePermissions {
+        let file_ro = WasiFilePermissions {
             read: true,
             write: false,
         };
+        assert!(matches!(to_fs_perms(&dir_rw, &file_ro), FsPerms::ReadWrite));
 
-        let wasi_perms = file_perms.to_wasmtime_perms();
-        assert!(wasi_perms.contains(FilePerms::READ));
-        assert!(!wasi_perms.contains(FilePerms::WRITE));
+        // No mutate, no write → ReadOnly.
+        let dir_ro = WasiDirPermissions {
+            read: true,
+            mutate: false,
+        };
+        assert!(matches!(to_fs_perms(&dir_ro, &file_ro), FsPerms::ReadOnly));
+
+        // File write alone still escalates to ReadWrite.
+        let file_rw = WasiFilePermissions {
+            read: true,
+            write: true,
+        };
+        assert!(matches!(to_fs_perms(&dir_ro, &file_rw), FsPerms::ReadWrite));
     }
 
     #[test]
@@ -2481,26 +2474,31 @@ mod tests {
 
     #[test]
     fn test_wasi_dir_permissions_full_access() {
-        let dir_perms = WasiDirPermissions {
+        let dir = WasiDirPermissions {
             read: true,
             mutate: true,
         };
-
-        let wasi_perms = dir_perms.to_wasmtime_perms();
-        assert!(wasi_perms.contains(DirPerms::READ));
-        assert!(wasi_perms.contains(DirPerms::MUTATE));
+        let file = WasiFilePermissions {
+            read: true,
+            write: false,
+        };
+        // Mutate on the directory alone escalates the collapsed FsPerms to ReadWrite.
+        assert!(matches!(to_fs_perms(&dir, &file), FsPerms::ReadWrite));
     }
 
     #[test]
     fn test_wasi_file_permissions_full_access() {
-        let file_perms = WasiFilePermissions {
+        let dir = WasiDirPermissions {
+            read: true,
+            mutate: false,
+        };
+        let file = WasiFilePermissions {
             read: true,
             write: true,
         };
-
-        let wasi_perms = file_perms.to_wasmtime_perms();
-        assert!(wasi_perms.contains(FilePerms::READ));
-        assert!(wasi_perms.contains(FilePerms::WRITE));
+        // File write escalates the pair to ReadWrite even if the directory is
+        // read-only.
+        assert!(matches!(to_fs_perms(&dir, &file), FsPerms::ReadWrite));
     }
 
     #[test]

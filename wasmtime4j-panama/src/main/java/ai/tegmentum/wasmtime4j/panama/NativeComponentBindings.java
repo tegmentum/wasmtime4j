@@ -1560,21 +1560,20 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   }
 
   /**
-   * Adds a preopened directory for WASI Preview 2 with granular permissions.
+   * Adds a preopened directory for WASI Preview 2 with an access mode.
    *
    * @param linkerPtr pointer to the component linker
    * @param hostPathPtr pointer to host path string
    * @param guestPathPtr pointer to guest path string
-   * @param dirPermsBits directory permission bits (DirPerms)
-   * @param filePermsBits file permission bits (FilePerms)
+   * @param fsPermsCode {@link ai.tegmentum.wasmtime4j.wasi.FsPerms#getValue()} (0 = READ_ONLY,
+   *     1 = READ_WRITE)
    * @return 0 on success, non-zero on error
    */
   public int componentLinkerAddWasiPreopenDir(
       final MemorySegment linkerPtr,
       final MemorySegment hostPathPtr,
       final MemorySegment guestPathPtr,
-      final int dirPermsBits,
-      final int filePermsBits) {
+      final int fsPermsCode) {
     validatePointer(linkerPtr, "linkerPtr");
     validatePointer(hostPathPtr, "hostPathPtr");
     validatePointer(guestPathPtr, "guestPathPtr");
@@ -1584,8 +1583,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         linkerPtr,
         hostPathPtr,
         guestPathPtr,
-        dirPermsBits,
-        filePermsBits);
+        fsPermsCode);
   }
 
   /**

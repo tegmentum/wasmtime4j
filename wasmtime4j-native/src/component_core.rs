@@ -1338,6 +1338,10 @@ impl EnhancedComponentEngine {
                 // Experimental wasmtime 44 map<K, V> — not enabled by wasmtime4j
                 ComponentValueType::Type("map".to_string())
             }
+            Type::FixedLengthList(fll) => ComponentValueType::FixedLengthList {
+                element: Box::new(self.convert_wasmtime_type_to_component_type(&fll.ty())),
+                length: fll.len(),
+            },
         }
     }
 
@@ -1758,6 +1762,15 @@ pub mod concurrent_call_json {
                     message: "map<K, V> values cannot be serialized for concurrent calls"
                         .to_string(),
                 }),
+                // wasmtime 48 introduced fixed-length lists as a distinct schema type;
+                // at the value layer they marshal identically to a plain list — the
+                // length constraint is enforced at typecheck time against the type
+                // descriptor, not at wire encoding.
+                Val::FixedLengthList(items) => {
+                    let json_items: WasmtimeResult<Vec<JsonVal>> =
+                        items.iter().map(JsonVal::from_val).collect();
+                    Ok(JsonVal::List(json_items?))
+                }
             }
         }
 

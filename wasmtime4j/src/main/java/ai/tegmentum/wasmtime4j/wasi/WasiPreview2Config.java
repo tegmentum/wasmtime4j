@@ -439,43 +439,30 @@ public final class WasiPreview2Config {
   public static final class PreopenDir {
     private final Path hostPath;
     private final String guestPath;
-    private final boolean readOnly;
-    private final DirPerms dirPerms;
-    private final FilePerms filePerms;
+    private final FsPerms fsPerms;
 
     /**
-     * Creates a preopened directory mapping with simple read-only flag.
+     * Creates a preopened directory mapping with a simple read-only flag.
      *
      * @param hostPath the path on the host filesystem
      * @param guestPath the path as seen by the guest
      * @param readOnly whether the directory is read-only
      */
     public PreopenDir(final Path hostPath, final String guestPath, final boolean readOnly) {
-      this.hostPath = hostPath;
-      this.guestPath = guestPath;
-      this.readOnly = readOnly;
-      this.dirPerms = readOnly ? DirPerms.readOnly() : DirPerms.all();
-      this.filePerms = readOnly ? FilePerms.readOnly() : FilePerms.all();
+      this(hostPath, guestPath, readOnly ? FsPerms.READ_ONLY : FsPerms.READ_WRITE);
     }
 
     /**
-     * Creates a preopened directory mapping with granular permissions.
+     * Creates a preopened directory mapping with an explicit access mode.
      *
      * @param hostPath the path on the host filesystem
      * @param guestPath the path as seen by the guest
-     * @param dirPerms the directory permissions
-     * @param filePerms the file permissions
+     * @param fsPerms the access mode
      */
-    public PreopenDir(
-        final Path hostPath,
-        final String guestPath,
-        final DirPerms dirPerms,
-        final FilePerms filePerms) {
+    public PreopenDir(final Path hostPath, final String guestPath, final FsPerms fsPerms) {
       this.hostPath = hostPath;
       this.guestPath = guestPath;
-      this.dirPerms = dirPerms;
-      this.filePerms = filePerms;
-      this.readOnly = !dirPerms.canMutate() && !filePerms.canWrite();
+      this.fsPerms = fsPerms;
     }
 
     /**
@@ -502,25 +489,16 @@ public final class WasiPreview2Config {
      * @return true if read-only
      */
     public boolean isReadOnly() {
-      return readOnly;
+      return fsPerms == FsPerms.READ_ONLY;
     }
 
     /**
-     * Gets the directory permissions.
+     * Gets the filesystem access mode.
      *
-     * @return the directory permissions
+     * @return the access mode
      */
-    public DirPerms getDirPerms() {
-      return dirPerms;
-    }
-
-    /**
-     * Gets the file permissions.
-     *
-     * @return the file permissions
-     */
-    public FilePerms getFilePerms() {
-      return filePerms;
+    public FsPerms getFsPerms() {
+      return fsPerms;
     }
   }
 
@@ -779,41 +757,33 @@ public final class WasiPreview2Config {
     }
 
     /**
-     * Preopens a directory with granular permissions.
+     * Preopens a directory with an explicit access mode.
      *
      * @param hostPath the path on the host filesystem
      * @param guestPath the path as seen by the guest
-     * @param dirPerms the directory permissions
-     * @param filePerms the file permissions
+     * @param fsPerms the access mode
      * @return this builder
      */
     public Builder preopenDir(
-        final Path hostPath,
-        final String guestPath,
-        final DirPerms dirPerms,
-        final FilePerms filePerms) {
-      this.preopenDirs.add(new PreopenDir(hostPath, guestPath, dirPerms, filePerms));
+        final Path hostPath, final String guestPath, final FsPerms fsPerms) {
+      this.preopenDirs.add(new PreopenDir(hostPath, guestPath, fsPerms));
       return this;
     }
 
     /**
-     * Preopens a directory with granular permissions using string path.
+     * Preopens a directory with an explicit access mode, using a string path.
      *
      * @param hostPath the path on the host filesystem
      * @param guestPath the path as seen by the guest
-     * @param dirPerms the directory permissions
-     * @param filePerms the file permissions
+     * @param fsPerms the access mode
      * @return this builder
      */
     @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
         value = "PATH_TRAVERSAL_IN",
         justification = "Host path is intentionally user-specified for WASI directory preopening")
     public Builder preopenDir(
-        final String hostPath,
-        final String guestPath,
-        final DirPerms dirPerms,
-        final FilePerms filePerms) {
-      return preopenDir(java.nio.file.Paths.get(hostPath), guestPath, dirPerms, filePerms);
+        final String hostPath, final String guestPath, final FsPerms fsPerms) {
+      return preopenDir(java.nio.file.Paths.get(hostPath), guestPath, fsPerms);
     }
 
     /**
