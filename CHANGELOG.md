@@ -7,6 +7,122 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [48.0.0-2.0.0] - 2026-08-24
+
+First release on the new `wasmtime-48-lts` branch tracking Wasmtime's
+inaugural LTS line. Master continues to follow bleeding-edge releases;
+this branch will receive 48.0.x patch bumps for the duration of
+upstream's LTS support window. Consumers who want stability over
+latest-and-greatest should pin to the `48.0.0-*` coordinate line.
+
+Bumps wasmtime 47.0.2 → 48.0.0. The upstream API shift is unusually
+broad this release, and the wasmtime4j major version jumps to `2.0.0`
+to reflect breaking changes on the Java surface — the FFI wire is not
+backwards-compatible with `1.x` clients. Consumers upgrading from
+`47.0.2-1.5.0` must audit callers of `WasiPreview2Config`, `DirPerms`,
+`FilePerms`, and `SocketAddrUse`; details below.
+
+### Breaking Java API changes
+
+- **`DirPerms` and `FilePerms` are removed; replaced by `FsPerms`.**
+  Wasmtime 48 collapsed the two bit-flag structs into a single
+  two-value `FsPerms` enum (`ReadOnly` / `ReadWrite`). The wasmtime4j
+  Java surface follows: `ai.tegmentum.wasmtime4j.wasi.DirPerms` and
+  `ai.tegmentum.wasmtime4j.wasi.FilePerms` are gone, replaced by a new
+  `ai.tegmentum.wasmtime4j.wasi.FsPerms` enum. `WasiPreview2Config.
+  PreopenDir` now stores a single `FsPerms` field; the granular
+  `preopenDir(Path, String, DirPerms, FilePerms)` builder overload is
+  replaced with `preopenDir(Path, String, FsPerms)` (plus its `String`
+  host-path variant). Existing callers of the simple boolean
+  `preopenDir(host, guest, readOnly)` and no-perms `preopenDir(host,
+  guest)` variants are unaffected. Migration: swap `DirPerms.all()`
+  and `FilePerms.all()` for `FsPerms.READ_WRITE`, `DirPerms.readOnly()`
+  and `FilePerms.readOnly()` for `FsPerms.READ_ONLY`.
+- **`SocketAddrUse` synced to the upstream 7-variant shape.**
+  Wasmtime 48 dropped the standalone `UdpConnect` check (UDP connect
+  now piggybacks on `UdpBind`), renamed `UdpOutgoingDatagram` to
+  `UdpSend`, and added `TcpListen`, `TcpAccept`, and `UdpReceive`.
+  The Java enum follows: `UDP_CONNECT` and `UDP_OUTGOING_DATAGRAM` are
+  gone; `UDP_SEND`, `TCP_LISTEN`, `TCP_ACCEPT`, and `UDP_RECEIVE` are
+  added. Wire codes are renumbered to match wasmtime's declaration
+  order (`TCP_BIND=0, TCP_LISTEN=1, TCP_ACCEPT=2, TCP_CONNECT=3,
+  UDP_BIND=4, UDP_SEND=5, UDP_RECEIVE=6`). Callers of
+  `SocketAddrCheck` handling the removed variants must fold that logic
+  into `UDP_BIND` (for the old connect check) and rename any
+  `UDP_OUTGOING_DATAGRAM` references to `UDP_SEND`.
+- **JNI + Panama native method signatures shrink.**
+  `JniComponent.nativeInstantiateComponentWithWasi`,
+  `JniComponentLinker.nativeAddWasiPreopenDir`, and
+  `NativeComponentBindings.componentLinkerAddWasiPreopenDir` now accept
+  a single `int fsPermsCode` (0 = READ_ONLY, 1 = READ_WRITE) in place
+  of the previous `int dirPermsBits, int filePermsBits` pair. This is
+  an FFI wire change: `2.0.0` Java code cannot call `1.x` native libs
+  and vice versa. The Java-facing configuration APIs above translate
+  automatically, so callers that go through `WasiPreview2Config` see
+  the change only in the reduced ambiguity of the perm model.
+
+### Added
+
+- **`ComponentType.FIXED_LENGTH_LIST` + `ComponentTypeDescriptor.
+  FixedLengthListImpl`.** Wasmtime 48 introduced `list<T, N>`
+  (fixed-length lists) as a distinct component-model schema type. The
+  Java descriptor surface gains a new `FIXED_LENGTH_LIST` variant, a
+  `fixedLengthList(elementType, length)` factory, and a `getFixedLength()`
+  accessor on the descriptor interface. Runtime values continue to
+  marshal as plain lists — the fixed-length constraint is a schema-level
+  invariant validated against the type descriptor, not a distinct
+  wire encoding.
+
+### Changed
+
+- **Wasmtime 47.0.2 → 48.0.0.** All co-versioned crates move together:
+  `wasmtime`, `wasmtime-wasi`, `wasmtime-wasi-http`, `wasmtime-wasi-nn`,
+  `wasmtime-wasi-config`, `wasmtime-wast`. `ort` and `ort-sys` remain
+  pinned to `=2.0.0-rc.10` — `wasmtime-wasi-nn 48.0.0` still bakes in
+  that exact rc, so the existing pins carry through unchanged.
+- **`wasmtime_wasi_http::p2::{WasiHttpView, WasiHttpCtxView}` relocated
+  to the crate root.** The `p2` submodule is now purely the WASI-HTTP
+  0.2 implementation namespace (`add_to_linker_async`, etc.); the
+  trait/struct pair defining the store integration surface moved to
+  `wasmtime_wasi_http::WasiHttpView` / `WasiHttpCtxView`. No visible
+  behaviour change; wasmtime4j's `StoreData` / `ComponentStoreData`
+  `impl` blocks updated accordingly.
+- **`WasiCtxBuilder::preopened_dir` collapsed to three arguments.**
+  Upstream signature is now `(host_path, guest_path, FsPerms)` in
+  place of the previous four-argument `(host_path, guest_path,
+  DirPerms, FilePerms)`. wasmtime4j's Rust glue collapses its internal
+  `(WasiDirPermissions, WasiFilePermissions)` pair to an `FsPerms` at
+  the call boundary via a new `to_fs_perms` helper: any mutate bit
+  on the directory side or write bit on the file side yields
+  `ReadWrite`; otherwise `ReadOnly`. This is a lossy collapse of the
+  wasmtime4j-internal `WasiDirPermissions`/`WasiFilePermissions`
+  wrappers, which are retained purely as the domain-model shape
+  existing Rust callers already build against — they no longer carry
+  independently addressable bits at the wasmtime call site.
+- **`Linker::define_name(store, name, extern)` removed upstream;
+  replaced by `Linker::define(store, "", name, extern)`.** An empty
+  module name resolves the import by name alone. The wasmtime4j
+  `Linker::define_name` wrapper preserves its signature; the delegation
+  updates transparently.
+
+### Removed
+
+- **Java `ai.tegmentum.wasmtime4j.wasi.DirPerms` and `FilePerms`
+  classes.** Superseded by `FsPerms`; see the breaking-changes section
+  above.
+- **Java `SocketAddrUse.UDP_CONNECT` and `UDP_OUTGOING_DATAGRAM`
+  variants.** Upstream removed the standalone `UdpConnect` check
+  (folded into `UdpBind`) and renamed `UdpOutgoingDatagram` to
+  `UdpSend`. See the breaking-changes section above.
+
+### Notes
+
+- WAST behaviour suite green at 794/794 (six aarch64-gated skips are
+  pre-existing platform assumptions, unrelated to the bump).
+- The upgrade validation flow documented at CLAUDE.md carries over
+  unchanged: `./mvnw install -Dmaven.test.skip=true` then `./mvnw test
+  -pl wasmtime4j-tests/wasmtime`. Do not use `-am`.
+
 ## [47.0.2-1.5.0] - 2026-07-21
 
 Bumps the upstream Wasmtime runtime from 46.0.1 to 47.0.2. The
