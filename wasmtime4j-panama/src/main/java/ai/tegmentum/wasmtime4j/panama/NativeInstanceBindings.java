@@ -1101,12 +1101,12 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   // =============================================================================
 
   /**
-   * Grow a caller-visible Table by {@code delta} slots, initialized to
-   * {@code initRefId} (funcref/externref registry id, or 0 for null).
+   * Grow a caller-visible Table by {@code delta} slots, initialized to {@code initRefId}
+   * (funcref/externref registry id, or 0 for null).
    *
    * @return previous table size on success, {@code -1} on failure
-   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a>
-   *     — mirror of {@code host:wasmtime@0.10.0/instance.wasm-table.grow}.
+   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a> — mirror of
+   *     {@code host:wasmtime@0.10.0/instance.wasm-table.grow}.
    * @since 1.5.2
    */
   public long callerGrowTable(
@@ -1117,21 +1117,15 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     validatePointer(callerPtr, "callerPtr");
     validatePointer(tablePtr, "tablePtr");
     return callNativeFunction(
-        "wasmtime4j_panama_caller_grow_table",
-        Long.class,
-        callerPtr,
-        tablePtr,
-        delta,
-        initRefId);
+        "wasmtime4j_panama_caller_grow_table", Long.class, callerPtr, tablePtr, delta, initRefId);
   }
 
   /**
-   * Set a caller-visible Table element at {@code index} to
-   * {@code valueRefId}.
+   * Set a caller-visible Table element at {@code index} to {@code valueRefId}.
    *
    * @return 0 on success, non-zero error code on failure
-   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a>
-   *     — mirror of {@code host:wasmtime@0.10.0/instance.wasm-table.set}.
+   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a> — mirror of
+   *     {@code host:wasmtime@0.10.0/instance.wasm-table.set}.
    * @since 1.5.2
    */
   public int callerSetTableElement(
@@ -1154,8 +1148,8 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
    * Grow a caller-visible Memory by {@code deltaPages}.
    *
    * @return previous size in pages on success, {@code -1} on failure
-   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a>
-   *     — mirror of {@code host:wasmtime@0.10.0/instance.wasm-memory.grow}.
+   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a> — mirror of
+   *     {@code host:wasmtime@0.10.0/instance.wasm-memory.grow}.
    * @since 1.5.2
    */
   public long callerGrowMemory(
@@ -1163,21 +1157,16 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     validatePointer(callerPtr, "callerPtr");
     validatePointer(memoryPtr, "memoryPtr");
     return callNativeFunction(
-        "wasmtime4j_panama_caller_grow_memory",
-        Long.class,
-        callerPtr,
-        memoryPtr,
-        deltaPages);
+        "wasmtime4j_panama_caller_grow_memory", Long.class, callerPtr, memoryPtr, deltaPages);
   }
 
   /**
-   * Read {@code length} bytes from the caller's exported memory named
-   * {@code name}, starting at {@code offset}, into the caller-provided
-   * {@code outBuf}.
+   * Read {@code length} bytes from the caller's exported memory named {@code name}, starting at
+   * {@code offset}, into the caller-provided {@code outBuf}.
    *
    * @return 0 on success, non-zero error code on failure
-   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a>
-   *     — mirror of {@code host:wasmtime@0.10.0/instance.wasm-memory.read}.
+   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a> — mirror of
+   *     {@code host:wasmtime@0.10.0/instance.wasm-memory.read}.
    * @since 1.5.2
    */
   public int callerReadMemory(
@@ -1200,12 +1189,12 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
-   * Write {@code len} bytes from {@code bytes} into the caller's exported
-   * memory named {@code name} starting at {@code offset}.
+   * Write {@code len} bytes from {@code bytes} into the caller's exported memory named {@code name}
+   * starting at {@code offset}.
    *
    * @return 0 on success, non-zero error code on failure
-   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a>
-   *     — mirror of {@code host:wasmtime@0.10.0/instance.wasm-memory.write}.
+   * @see <a href="file://~/git/wasmos/wit/instance.wit">wasmos wit://instance.wit</a> — mirror of
+   *     {@code host:wasmtime@0.10.0/instance.wasm-memory.write}.
    * @since 1.5.2
    */
   public int callerWriteMemory(
@@ -1228,13 +1217,13 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
-   * Instantiate an {@code InstancePre} against the caller's live wasmtime
-   * context. Writes the resulting instance handle to {@code *instanceOut}.
+   * Instantiate an {@code InstancePre} against the caller's live wasmtime context. Writes the
+   * resulting instance handle to {@code *instanceOut}.
    *
    * @return 0 on success, non-zero error code on failure
-   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a>
-   *     — mirror of {@code host:wasmtime@0.10.0/linker.linker.instantiate}
-   *     (Panama uses out-param for the instance handle vs. WIT's result).
+   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a> — mirror of
+   *     {@code host:wasmtime@0.10.0/linker.linker.instantiate} (Panama uses out-param for the
+   *     instance handle vs. WIT's result).
    * @since 1.5.2
    */
   public int callerInstantiate(
@@ -1253,12 +1242,11 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
-   * Define a memory extern into a Linker using the caller's live store
-   * context.
+   * Define a memory extern into a Linker using the caller's live store context.
    *
    * @return 0 on success, non-zero error code on failure
-   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a>
-   *     — mirror of {@code host:wasmtime@0.10.0/linker.linker.define-memory}.
+   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a> — mirror of
+   *     {@code host:wasmtime@0.10.0/linker.linker.define-memory}.
    * @since 1.5.2
    */
   public int callerLinkerDefineMemory(
@@ -1283,12 +1271,11 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
-   * Define a table extern into a Linker using the caller's live store
-   * context.
+   * Define a table extern into a Linker using the caller's live store context.
    *
    * @return 0 on success, non-zero error code on failure
-   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a>
-   *     — mirror of {@code host:wasmtime@0.10.0/linker.linker.define-table}.
+   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a> — mirror of
+   *     {@code host:wasmtime@0.10.0/linker.linker.define-table}.
    * @since 1.5.2
    */
   public int callerLinkerDefineTable(
@@ -1313,12 +1300,11 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
-   * Define a global extern into a Linker using the caller's live store
-   * context.
+   * Define a global extern into a Linker using the caller's live store context.
    *
    * @return 0 on success, non-zero error code on failure
-   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a>
-   *     — mirror of {@code host:wasmtime@0.10.0/linker.linker.define-global}.
+   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a> — mirror of
+   *     {@code host:wasmtime@0.10.0/linker.linker.define-global}.
    * @since 1.5.2
    */
   public int callerLinkerDefineGlobal(
@@ -1359,19 +1345,16 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   // =============================================================================
 
   /**
-   * Register a caller-scoped function as a funcref in REFERENCE_REGISTRY under
-   * the caller's store_id, returning the registry id used by
-   * {@link #callerGrowTable} and {@link #callerSetTableElement} for non-null
-   * funcref initialization / write.
+   * Register a caller-scoped function as a funcref in REFERENCE_REGISTRY under the caller's
+   * store_id, returning the registry id used by {@link #callerGrowTable} and {@link
+   * #callerSetTableElement} for non-null funcref initialization / write.
    *
-   * <p>Returns 0 on null args (registry-id 0 == null funcref sentinel).
-   * Positive return values are the registry id assigned by the caller-scoped
-   * REFERENCE_REGISTRY.
+   * <p>Returns 0 on null args (registry-id 0 == null funcref sentinel). Positive return values are
+   * the registry id assigned by the caller-scoped REFERENCE_REGISTRY.
    *
    * @return registry id (positive) on success, 0 on null args
-   * @see <a href="file://~/git/wasmos/wit/table.wit">wasmos wit://table.wit</a>
-   *     — mirrors {@code host:wasmtime@0.10.0/table.table.grow} init-arg
-   *     resolution shape.
+   * @see <a href="file://~/git/wasmos/wit/table.wit">wasmos wit://table.wit</a> — mirrors {@code
+   *     host:wasmtime@0.10.0/table.table.grow} init-arg resolution shape.
    * @since 1.5.3
    */
   public long callerFuncToRegistryId(
@@ -1383,15 +1366,14 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
-   * F-Wasmtime4j-Panama-FuncToRegistryId-Wire-Alignment (2026-07-29) —
-   * Panama-side sibling of {@link #callerFuncToRegistryId} that accepts
-   * a raw {@code wasmtime::Func} ptr (the shape
-   * {@link PanamaCallerFunction}'s {@code funcHandle} carries — produced
-   * by {@code wasmtime4j_panama_caller_get_function}) instead of a
-   * {@code crate::jni::function::FunctionHandle} JNI-tier struct.
+   * F-Wasmtime4j-Panama-FuncToRegistryId-Wire-Alignment (2026-07-29) — Panama-side sibling of
+   * {@link #callerFuncToRegistryId} that accepts a raw {@code wasmtime::Func} ptr (the shape {@link
+   * PanamaCallerFunction}'s {@code funcHandle} carries — produced by {@code
+   * wasmtime4j_panama_caller_get_function}) instead of a {@code
+   * crate::jni::function::FunctionHandle} JNI-tier struct.
    *
-   * <p>Returns 0 on null args (registry-id 0 == null funcref sentinel),
-   * positive registry id on success.
+   * <p>Returns 0 on null args (registry-id 0 == null funcref sentinel), positive registry id on
+   * success.
    *
    * @since 1.5.3
    */
@@ -1404,13 +1386,13 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
-   * Define a memory extern into a Linker by looking it up on the caller by
-   * export name — avoids the api-layer registry-handle roundtrip.
+   * Define a memory extern into a Linker by looking it up on the caller by export name — avoids the
+   * api-layer registry-handle roundtrip.
    *
    * @return 0 on success, non-zero error code on failure
-   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a>
-   *     — mirror of {@code host:wasmtime@0.10.0/linker.linker.define-memory}
-   *     with an export-name lookup shortcut.
+   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a> — mirror of
+   *     {@code host:wasmtime@0.10.0/linker.linker.define-memory} with an export-name lookup
+   *     shortcut.
    * @since 1.5.3
    */
   public int callerLinkerDefineMemoryFromExport(
@@ -1435,13 +1417,13 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
-   * Define a table extern into a Linker by looking it up on the caller by
-   * export name — avoids the api-layer registry-handle roundtrip.
+   * Define a table extern into a Linker by looking it up on the caller by export name — avoids the
+   * api-layer registry-handle roundtrip.
    *
    * @return 0 on success, non-zero error code on failure
-   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a>
-   *     — mirror of {@code host:wasmtime@0.10.0/linker.linker.define-table}
-   *     with an export-name lookup shortcut.
+   * @see <a href="file://~/git/wasmos/wit/linker.wit">wasmos wit://linker.wit</a> — mirror of
+   *     {@code host:wasmtime@0.10.0/linker.linker.define-table} with an export-name lookup
+   *     shortcut.
    * @since 1.5.3
    */
   public int callerLinkerDefineTableFromExport(

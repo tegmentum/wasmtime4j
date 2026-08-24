@@ -458,14 +458,12 @@ final class PanamaCaller<T> implements Caller<T> {
     final MemorySegment tablePtr = extractPanamaTable(table).getNativeTable();
     final int rc = bindings.callerSetTableElement(callerPtr, tablePtr, index, valueRefId);
     if (rc != 0) {
-      throw new WasmException(
-          "PanamaCaller.setTableElement failed (native returned " + rc + ")");
+      throw new WasmException("PanamaCaller.setTableElement failed (native returned " + rc + ")");
     }
   }
 
   @Override
-  public long growMemory(
-      final ai.tegmentum.wasmtime4j.WasmMemory memory, final long deltaPages)
+  public long growMemory(final ai.tegmentum.wasmtime4j.WasmMemory memory, final long deltaPages)
       throws WasmException {
     if (memory == null) {
       throw new IllegalArgumentException("memory cannot be null");
@@ -476,8 +474,7 @@ final class PanamaCaller<T> implements Caller<T> {
     final MemorySegment memoryPtr = extractPanamaMemory(memory).getNativeMemory();
     final long prev = bindings.callerGrowMemory(callerPtr, memoryPtr, deltaPages);
     if (prev < 0) {
-      throw new WasmException(
-          "PanamaCaller.growMemory failed (native returned " + prev + ")");
+      throw new WasmException("PanamaCaller.growMemory failed (native returned " + prev + ")");
     }
     return prev;
   }
@@ -541,8 +538,7 @@ final class PanamaCaller<T> implements Caller<T> {
     }
     if (!(pre instanceof PanamaInstancePre panamaPre)) {
       throw new IllegalArgumentException(
-          "PanamaCaller.instantiate requires a PanamaInstancePre; got "
-              + pre.getClass().getName());
+          "PanamaCaller.instantiate requires a PanamaInstancePre; got " + pre.getClass().getName());
     }
     final ai.tegmentum.wasmtime4j.Module module = panamaPre.getModule();
     if (!(module instanceof PanamaModule panamaModule)) {
@@ -554,8 +550,7 @@ final class PanamaCaller<T> implements Caller<T> {
       final MemorySegment instanceOut = arena.allocate(ValueLayout.ADDRESS);
       final int rc = bindings.callerInstantiate(callerPtr, prePtr, instanceOut);
       if (rc != 0) {
-        throw new WasmException(
-            "PanamaCaller.instantiate failed (native returned " + rc + ")");
+        throw new WasmException("PanamaCaller.instantiate failed (native returned " + rc + ")");
       }
       final MemorySegment instanceHandle = instanceOut.get(ValueLayout.ADDRESS, 0);
       if (instanceHandle == null || instanceHandle.equals(MemorySegment.NULL)) {
@@ -674,8 +669,7 @@ final class PanamaCaller<T> implements Caller<T> {
   // ===========================================================================
 
   @Override
-  public ai.tegmentum.wasmtime4j.Module compileModule(final byte[] wasmBytes)
-      throws WasmException {
+  public ai.tegmentum.wasmtime4j.Module compileModule(final byte[] wasmBytes) throws WasmException {
     if (wasmBytes == null) {
       throw new IllegalArgumentException("wasmBytes cannot be null");
     }
@@ -809,27 +803,23 @@ final class PanamaCaller<T> implements Caller<T> {
   }
 
   /**
-   * Resolve a mutation-op {@code init}/{@code value} argument to a funcref
-   * registry id.
+   * Resolve a mutation-op {@code init}/{@code value} argument to a funcref registry id.
    *
-   * <p>Supported values (F-Wasmtime4j-Panama-Consumer-Gated-Followups r.2,
-   * 2026-07-28):
+   * <p>Supported values (F-Wasmtime4j-Panama-Consumer-Gated-Followups r.2, 2026-07-28):
+   *
    * <ul>
    *   <li>{@code null} → registry id 0 (null funcref sentinel).
-   *   <li>{@link PanamaCallerFunction} — extracts its {@code funcHandle}
-   *       {@link MemorySegment} and registers via
-   *       {@link NativeInstanceBindings#callerFuncToRegistryId}.
-   *   <li>{@link PanamaHostFunction} — extracts its
-   *       {@link PanamaHostFunction#getFunctionHandle} and registers via
-   *       the same path.
+   *   <li>{@link PanamaCallerFunction} — extracts its {@code funcHandle} {@link MemorySegment} and
+   *       registers via {@link NativeInstanceBindings#callerFuncToRegistryId}.
+   *   <li>{@link PanamaHostFunction} — extracts its {@link PanamaHostFunction#getFunctionHandle}
+   *       and registers via the same path.
    * </ul>
    *
-   * <p>Other {@link WasmFunction} implementations (including {@link PanamaFunction}
-   * which does not hold a direct native handle — it dispatches by name through
-   * an instance) still throw {@link IllegalArgumentException}. Consumers wanting
-   * to pass a name-dispatch {@link PanamaFunction} should first materialize it
-   * through a {@link PanamaHostFunction} export lookup, mirroring how JNI
-   * consumers pass {@code JniFunction}.
+   * <p>Other {@link WasmFunction} implementations (including {@link PanamaFunction} which does not
+   * hold a direct native handle — it dispatches by name through an instance) still throw {@link
+   * IllegalArgumentException}. Consumers wanting to pass a name-dispatch {@link PanamaFunction}
+   * should first materialize it through a {@link PanamaHostFunction} export lookup, mirroring how
+   * JNI consumers pass {@code JniFunction}.
    */
   private long resolveRefIdForMutation(final Object value, final String opName)
       throws WasmException {

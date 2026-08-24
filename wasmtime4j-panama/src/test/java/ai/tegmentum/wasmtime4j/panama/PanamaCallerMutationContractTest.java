@@ -34,15 +34,13 @@ import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.Test;
 
 /**
- * Contract tests for the 9 caller-scoped mutation methods overridden on
- * {@link PanamaCaller} in
+ * Contract tests for the 9 caller-scoped mutation methods overridden on {@link PanamaCaller} in
  * F-Wasmtime4j-Panama-Caller-Scoped-Mutation-Java-Bindings r.3 slice 2.
  *
- * <p>These are reflection-level tests that prove each mutation method is
- * a real override on {@link PanamaCaller} (not inherited from the
- * {@link Caller}-interface {@code default} UOE fallback). Positive-path
- * runtime testing needs a live callback frame + Panama-consumer harness
- * and is deferred per charter §Out-of-scope.
+ * <p>These are reflection-level tests that prove each mutation method is a real override on {@link
+ * PanamaCaller} (not inherited from the {@link Caller}-interface {@code default} UOE fallback).
+ * Positive-path runtime testing needs a live callback frame + Panama-consumer harness and is
+ * deferred per charter §Out-of-scope.
  */
 final class PanamaCallerMutationContractTest {
 
@@ -65,8 +63,7 @@ final class PanamaCallerMutationContractTest {
         iface, impl, "PanamaCaller must declare its own " + name + "; inherited default present");
     // Sanity: not abstract, not default (i.e. real body).
     assertFalse(
-        Modifier.isAbstract(impl.getModifiers()),
-        name + " must not be abstract on PanamaCaller");
+        Modifier.isAbstract(impl.getModifiers()), name + " must not be abstract on PanamaCaller");
     assertFalse(impl.isDefault(), name + " must not be default on PanamaCaller");
     assertEquals(
         iface.getReturnType(),
@@ -131,21 +128,13 @@ final class PanamaCallerMutationContractTest {
   @Test
   void linker_define_memory_from_export_is_real_override() throws NoSuchMethodException {
     assertRealOverride(
-        "linkerDefineMemoryFromExport",
-        Linker.class,
-        String.class,
-        String.class,
-        String.class);
+        "linkerDefineMemoryFromExport", Linker.class, String.class, String.class, String.class);
   }
 
   @Test
   void linker_define_table_from_export_is_real_override() throws NoSuchMethodException {
     assertRealOverride(
-        "linkerDefineTableFromExport",
-        Linker.class,
-        String.class,
-        String.class,
-        String.class);
+        "linkerDefineTableFromExport", Linker.class, String.class, String.class, String.class);
   }
 
   @Test
@@ -179,8 +168,7 @@ final class PanamaCallerMutationContractTest {
           }
         }
         if (!declaresWasmException) {
-          throw new AssertionError(
-              name + " on PanamaCaller must declare throws WasmException");
+          throw new AssertionError(name + " on PanamaCaller must declare throws WasmException");
         }
       }
     }
@@ -209,12 +197,9 @@ final class PanamaCallerMutationContractTest {
             break;
           }
         }
-        assertNotNull(
-            m,
-            "guard: reflection returned non-null Method for " + name);
+        assertNotNull(m, "guard: reflection returned non-null Method for " + name);
         if (!declaresWasmException) {
-          throw new AssertionError(
-              name + " on PanamaCaller must declare throws WasmException");
+          throw new AssertionError(name + " on PanamaCaller must declare throws WasmException");
         }
       }
     }
@@ -250,20 +235,15 @@ final class PanamaCallerMutationContractTest {
   }
 
   /**
-   * A previously-passed api-level {@link Module} handed to PanamaCaller
-   * indirectly (e.g. an api-level type not wrapping a Panama concrete type)
-   * would fail extraction. This test reserves that behavior via reflection
-   * on the presence of the extract* helpers.
+   * A previously-passed api-level {@link Module} handed to PanamaCaller indirectly (e.g. an
+   * api-level type not wrapping a Panama concrete type) would fail extraction. This test reserves
+   * that behavior via reflection on the presence of the extract* helpers.
    */
   @Test
   void tier_extraction_helpers_are_defined() throws NoSuchMethodException {
-    assertNotNull(
-        PanamaCaller.class.getDeclaredMethod("extractPanamaTable", WasmTable.class));
-    assertNotNull(
-        PanamaCaller.class.getDeclaredMethod("extractPanamaMemory", WasmMemory.class));
-    assertNotNull(
-        PanamaCaller.class.getDeclaredMethod("extractPanamaGlobal", WasmGlobal.class));
-    assertNotNull(
-        PanamaCaller.class.getDeclaredMethod("extractPanamaLinker", Linker.class));
+    assertNotNull(PanamaCaller.class.getDeclaredMethod("extractPanamaTable", WasmTable.class));
+    assertNotNull(PanamaCaller.class.getDeclaredMethod("extractPanamaMemory", WasmMemory.class));
+    assertNotNull(PanamaCaller.class.getDeclaredMethod("extractPanamaGlobal", WasmGlobal.class));
+    assertNotNull(PanamaCaller.class.getDeclaredMethod("extractPanamaLinker", Linker.class));
   }
 }

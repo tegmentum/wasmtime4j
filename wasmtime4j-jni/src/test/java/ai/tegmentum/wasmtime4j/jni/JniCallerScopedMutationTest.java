@@ -661,7 +661,7 @@ public class JniCallerScopedMutationTest {
 
     final AtomicInteger writeCount = new AtomicInteger(0);
     final AtomicInteger readEqualsWrite = new AtomicInteger(0);
-    final byte[] payload = new byte[] { 0x11, 0x22, 0x33, 0x44 };
+    final byte[] payload = new byte[] {0x11, 0x22, 0x33, 0x44};
 
     final HostFunction probe =
         HostFunction.singleValueWithCaller(

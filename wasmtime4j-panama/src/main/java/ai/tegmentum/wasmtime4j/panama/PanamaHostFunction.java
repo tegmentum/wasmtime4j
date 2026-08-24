@@ -1371,33 +1371,27 @@ public final class PanamaHostFunction implements WasmFunction {
   }
 
   /**
-   * F-Wasmtime4j-Panama-Callback-Caller-Wire r.3 (2026-07-28) — shared
-   * caller-context threader used by both the linker path
-   * ({@link PanamaLinker#invokeHostFunctionCallback}) and the store path
+   * F-Wasmtime4j-Panama-Callback-Caller-Wire r.3 (2026-07-28) — shared caller-context threader used
+   * by both the linker path ({@link PanamaLinker#invokeHostFunctionCallback}) and the store path
    * ({@link #ffiCallback}).
    *
-   * <p>If {@code impl} is a {@link HostFunction.CallerAwareHostFunction},
-   * this builds a {@link PanamaCaller} from the live {@code callerPtr}
-   * (received across the FFI boundary from Rust's
-   * {@code PanamaHostFunctionCallbackImpl::execute} /
-   * {@code StoreHostFunctionCallbackImpl::execute}), stashes it in
-   * {@link #CALLER_CONTEXT}, and invokes {@code impl.execute(params)}.
-   * On any exit path (return or exception) the caller-context is
-   * cleared so a subsequent callback on the same thread doesn't inherit
-   * the reference.
+   * <p>If {@code impl} is a {@link HostFunction.CallerAwareHostFunction}, this builds a {@link
+   * PanamaCaller} from the live {@code callerPtr} (received across the FFI boundary from Rust's
+   * {@code PanamaHostFunctionCallbackImpl::execute} / {@code
+   * StoreHostFunctionCallbackImpl::execute}), stashes it in {@link #CALLER_CONTEXT}, and invokes
+   * {@code impl.execute(params)}. On any exit path (return or exception) the caller-context is
+   * cleared so a subsequent callback on the same thread doesn't inherit the reference.
    *
-   * <p>When the impl is not caller-aware, or when either {@code store}
-   * or {@code callerPtr} is null, this falls back to invoking
-   * {@code fallbackCallback} without setting any caller context — same
-   * behavior as the pre-r.3 code paths.
+   * <p>When the impl is not caller-aware, or when either {@code store} or {@code callerPtr} is
+   * null, this falls back to invoking {@code fallbackCallback} without setting any caller context —
+   * same behavior as the pre-r.3 code paths.
    *
    * @param impl the user's HostFunction (may be CallerAware)
-   * @param fallbackCallback the callback to invoke when caller-aware
-   *     handling is not applicable
-   * @param store the PanamaStore this callback belongs to (from the
-   *     linker's registered wrappers or the host function's storeRef)
-   * @param callerPtr live {@code wasmtime::Caller<'_, StoreData>*} from
-   *     Rust; may be null if the FFI wire didn't provide one
+   * @param fallbackCallback the callback to invoke when caller-aware handling is not applicable
+   * @param store the PanamaStore this callback belongs to (from the linker's registered wrappers or
+   *     the host function's storeRef)
+   * @param callerPtr live {@code wasmtime::Caller<'_, StoreData>*} from Rust; may be null if the
+   *     FFI wire didn't provide one
    * @param params unmarshalled callback parameters
    * @return the callback's return values
    * @throws Exception whatever the callback throws
@@ -1429,9 +1423,8 @@ public final class PanamaHostFunction implements WasmFunction {
   }
 
   /**
-   * Overload used by {@link PanamaLinker#invokeHostFunctionCallback} where
-   * the wrapper doesn't carry a separate fallback callback — the impl IS
-   * the callback either way.
+   * Overload used by {@link PanamaLinker#invokeHostFunctionCallback} where the wrapper doesn't
+   * carry a separate fallback callback — the impl IS the callback either way.
    */
   static WasmValue[] invokeWithOptionalCallerContext(
       final HostFunction impl,

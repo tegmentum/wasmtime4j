@@ -528,10 +528,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
         // Call native linker instantiate + register-in-engine
         final int errorCode =
             NATIVE_BINDINGS.componentLinkerInstantiate(
-                engineHandle,
-                nativeLinker,
-                panamaComponent.getNativeHandle(),
-                instanceIdOut);
+                engineHandle, nativeLinker, panamaComponent.getNativeHandle(), instanceIdOut);
 
         if (errorCode != 0) {
           throw PanamaErrorMapper.mapNativeError(
@@ -785,10 +782,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
           final MemorySegment guestPathPtr = tempArena.allocateFrom(dir.getGuestPath());
           final int result =
               NATIVE_BINDINGS.componentLinkerAddWasiPreopenDir(
-                  nativeLinker,
-                  hostPathPtr,
-                  guestPathPtr,
-                  dir.getFsPerms().getValue());
+                  nativeLinker, hostPathPtr, guestPathPtr, dir.getFsPerms().getValue());
           if (result != 0) {
             LOGGER.warning(
                 "Failed to add preopened dir '"

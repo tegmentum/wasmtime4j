@@ -125,9 +125,9 @@ public final class JniComponent {
    * given engine. Preopens are parallel arrays (host path, guest path, FsPerms code); env is
    * parallel key/value arrays. Anything not granted is denied.
    *
-   * <p>The {@code fsPermsCodes} entries carry {@link ai.tegmentum.wasmtime4j.wasi.FsPerms#getValue()}
-   * values (0 = READ_ONLY, 1 = READ_WRITE), matching upstream wasmtime 48's collapsed FsPerms
-   * enum.
+   * <p>The {@code fsPermsCodes} entries carry {@link
+   * ai.tegmentum.wasmtime4j.wasi.FsPerms#getValue()} values (0 = READ_ONLY, 1 = READ_WRITE),
+   * matching upstream wasmtime 48's collapsed FsPerms enum.
    *
    * @return native component instance id or 0 on failure
    */

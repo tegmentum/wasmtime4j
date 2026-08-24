@@ -160,8 +160,7 @@ public interface ComponentTypeDescriptor {
   Optional<ComponentTypeDescriptor> getStreamElementType();
 
   /**
-   * Gets the schema-level element count for a fixed-length list ({@code list<T, N>}, wasmtime
-   * 48+).
+   * Gets the schema-level element count for a fixed-length list ({@code list<T, N>}, wasmtime 48+).
    *
    * @return the required list length
    * @throws IllegalStateException if this is not a fixed-length list type

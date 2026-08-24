@@ -445,12 +445,12 @@ class PanamaComponentLinkerTest {
   }
 
   /**
-   * End-to-end coverage for {@link PanamaComponentLinker#instantiate}. Regression guard for the
-   * FFI wiring bug where `wasmtime4j_component_linker_instantiate` returned a raw
+   * End-to-end coverage for {@link PanamaComponentLinker#instantiate}. Regression guard for the FFI
+   * wiring bug where `wasmtime4j_component_linker_instantiate` returned a raw
    * `Box<ComponentInstanceHandle>` pointer that Java stored as if it were an
-   * `EnhancedComponentEngine *` — invoke() then dispatched with an instance ID the engine's
-   * HashMap did not know about (and derived from that pointer's address). The path was hidden
-   * because no linker-based test exercised invoke; adding this test unblocked the fix.
+   * `EnhancedComponentEngine *` — invoke() then dispatched with an instance ID the engine's HashMap
+   * did not know about (and derived from that pointer's address). The path was hidden because no
+   * linker-based test exercised invoke; adding this test unblocked the fix.
    */
   @Nested
   @DisplayName("Linker Instantiate + Invoke (Integration) Tests")

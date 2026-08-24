@@ -764,8 +764,7 @@ public final class WasiPreview2Config {
      * @param fsPerms the access mode
      * @return this builder
      */
-    public Builder preopenDir(
-        final Path hostPath, final String guestPath, final FsPerms fsPerms) {
+    public Builder preopenDir(final Path hostPath, final String guestPath, final FsPerms fsPerms) {
       this.preopenDirs.add(new PreopenDir(hostPath, guestPath, fsPerms));
       return this;
     }

@@ -706,12 +706,12 @@ final class JniCaller<T> implements Caller<T> {
    * Define a memory extern on a linker using this caller's live store context
    * (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27).
    *
-   * <p>Package-private — the intended consumer is the webassembly4j
-   * WasmtimeCallerAdapter, which uses this to wire {@code MemoryImport}
-   * defs into a transient linker built from a callback frame.
+   * <p>Package-private — the intended consumer is the webassembly4j WasmtimeCallerAdapter, which
+   * uses this to wire {@code MemoryImport} defs into a transient linker built from a callback
+   * frame.
    *
-   * @param linker the JniLinker to define the memory on (its native handle
-   *     will be extracted internally)
+   * @param linker the JniLinker to define the memory on (its native handle will be extracted
+   *     internally)
    * @param moduleName import module name (e.g. "env")
    * @param name import field name (e.g. "memory")
    * @param memory the WasmMemory extern to bind
@@ -720,10 +720,7 @@ final class JniCaller<T> implements Caller<T> {
    */
   @Override
   public void linkerDefineMemory(
-      final Linker<?> linker,
-      final String moduleName,
-      final String name,
-      final WasmMemory memory)
+      final Linker<?> linker, final String moduleName, final String name, final WasmMemory memory)
       throws WasmException {
     if (linker == null) {
       throw new IllegalArgumentException("linker cannot be null");
@@ -754,10 +751,7 @@ final class JniCaller<T> implements Caller<T> {
 
   @Override
   public void linkerDefineTable(
-      final Linker<?> linker,
-      final String moduleName,
-      final String name,
-      final WasmTable table)
+      final Linker<?> linker, final String moduleName, final String name, final WasmTable table)
       throws WasmException {
     if (linker == null) {
       throw new IllegalArgumentException("linker cannot be null");
@@ -788,10 +782,7 @@ final class JniCaller<T> implements Caller<T> {
 
   @Override
   public void linkerDefineGlobal(
-      final Linker<?> linker,
-      final String moduleName,
-      final String name,
-      final WasmGlobal global)
+      final Linker<?> linker, final String moduleName, final String name, final WasmGlobal global)
       throws WasmException {
     if (linker == null) {
       throw new IllegalArgumentException("linker cannot be null");
@@ -926,10 +917,9 @@ final class JniCaller<T> implements Caller<T> {
       String callerExportName);
 
   /**
-   * F-Wasmtime4j-Caller-Scoped-Registry-Integration r.2.a (2026-07-27).
-   * Register a caller-scoped function as a funcref in REFERENCE_REGISTRY under
-   * the caller's store_id, returning the registry id used by nativeCallerGrowTable
-   * / nativeCallerSetTableElement.
+   * F-Wasmtime4j-Caller-Scoped-Registry-Integration r.2.a (2026-07-27). Register a caller-scoped
+   * function as a funcref in REFERENCE_REGISTRY under the caller's store_id, returning the registry
+   * id used by nativeCallerGrowTable / nativeCallerSetTableElement.
    */
   private static native long nativeCallerFuncToRegistryId(long callerHandle, long functionPtr);
 }

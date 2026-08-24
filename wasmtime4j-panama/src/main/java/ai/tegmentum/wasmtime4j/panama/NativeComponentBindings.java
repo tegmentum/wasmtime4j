@@ -1565,8 +1565,8 @@ public final class NativeComponentBindings extends NativeBindingsBase {
    * @param linkerPtr pointer to the component linker
    * @param hostPathPtr pointer to host path string
    * @param guestPathPtr pointer to guest path string
-   * @param fsPermsCode {@link ai.tegmentum.wasmtime4j.wasi.FsPerms#getValue()} (0 = READ_ONLY,
-   *     1 = READ_WRITE)
+   * @param fsPermsCode {@link ai.tegmentum.wasmtime4j.wasi.FsPerms#getValue()} (0 = READ_ONLY, 1 =
+   *     READ_WRITE)
    * @return 0 on success, non-zero on error
    */
   public int componentLinkerAddWasiPreopenDir(

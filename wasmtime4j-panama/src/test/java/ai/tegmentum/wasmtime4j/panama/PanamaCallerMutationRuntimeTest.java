@@ -36,18 +36,15 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Positive-path runtime tests for Panama Caller&lt;T&gt; mutation methods delivered by
- * F-Wasmtime4j-Panama-Consumer-Gated-Followups r.2-r.4 (2026-07-28). This
- * suite is the r.4 slice of the follow-up wire-fix charter
- * F-Wasmtime4j-Panama-Callback-Caller-Wire (2026-07-28), which extended the
- * Panama callback ABI to carry a real {@code wasmtime::Caller<'_,
- * StoreData>*} instead of a store-address fallback.
+ * F-Wasmtime4j-Panama-Consumer-Gated-Followups r.2-r.4 (2026-07-28). This suite is the r.4 slice of
+ * the follow-up wire-fix charter F-Wasmtime4j-Panama-Callback-Caller-Wire (2026-07-28), which
+ * extended the Panama callback ABI to carry a real {@code wasmtime::Caller<'_, StoreData>*} instead
+ * of a store-address fallback.
  *
- * <p>Each test wires a wasm module that imports a host function which,
- * inside a live callback frame, exercises one of the caller-scoped mutation
- * APIs and asserts an observable side-effect after the callback returns.
- * Any assertion failure inside the callback is captured to an
- * {@link AtomicReference} and re-thrown post-return so JUnit reports the
- * failure.
+ * <p>Each test wires a wasm module that imports a host function which, inside a live callback
+ * frame, exercises one of the caller-scoped mutation APIs and asserts an observable side-effect
+ * after the callback returns. Any assertion failure inside the callback is captured to an {@link
+ * AtomicReference} and re-thrown post-return so JUnit reports the failure.
  */
 @DisplayName("Panama Caller<T> mutation — positive-path runtime")
 final class PanamaCallerMutationRuntimeTest {
@@ -63,7 +60,8 @@ final class PanamaCallerMutationRuntimeTest {
   }
 
   @Test
-  @DisplayName("getMemory('memory') from callback returns valid PanamaMemory (validated-wrapper fix)")
+  @DisplayName(
+      "getMemory('memory') from callback returns valid PanamaMemory (validated-wrapper fix)")
   void getMemoryFromCallbackReturnsValidatedMemory() throws Exception {
     // F-Wasmtime4j-Panama-Memory-From-Caller-Wrapper-Fix (2026-07-28):
     // wasmtime4j_panama_caller_get_memory previously boxed a raw
@@ -257,8 +255,7 @@ final class PanamaCallerMutationRuntimeTest {
                 // Build a child linker + define the parent's memory export
                 // into it under name env.hostmem via the r.3 override.
                 final PanamaLinker<Void> childLinker = new PanamaLinker<>(engine);
-                caller.linkerDefineMemoryFromExport(
-                    childLinker, "env", "hostmem", "memory");
+                caller.linkerDefineMemoryFromExport(childLinker, "env", "hostmem", "memory");
                 // Instantiate the pre-compiled child module + call stamp()
                 // which writes to the shared memory. The write must be
                 // observable post-callback via instance.getMemory("memory").
@@ -412,7 +409,8 @@ final class PanamaCallerMutationRuntimeTest {
   }
 
   @Test
-  @DisplayName("caller.growTable with PanamaCallerFunction init exercises caller_func_ptr_to_registry_id")
+  @DisplayName(
+      "caller.growTable with PanamaCallerFunction init exercises caller_func_ptr_to_registry_id")
   void growTableWithCallerFunctionInitExercisesFuncPtrFFI() throws Exception {
     // Runtime witness for the PanamaCallerFunction branch of the
     // FuncToRegistryId fix (2026-07-29). PanamaCallerFunction is
@@ -813,8 +811,7 @@ final class PanamaCallerMutationRuntimeTest {
         "env",
         "add_one",
         FunctionType.of(
-            new WasmValueType[] {WasmValueType.I32},
-            new WasmValueType[] {WasmValueType.I32}),
+            new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32}),
         (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt() + 1)});
 
     final Instance instance = instantiate(engine, linker, store, wat);

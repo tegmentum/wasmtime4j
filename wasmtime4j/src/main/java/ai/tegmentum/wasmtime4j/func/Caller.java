@@ -391,8 +391,8 @@ public interface Caller<T> {
    * .into_memory()} + {@code Memory::read(&mut ctx, offset, buf)} with the same generation-counter
    * guard as the other scoped methods. Preferable to {@code caller.getMemory(name).get().read(...)}
    * from inside a callback because the api-layer Memory adapter's native handle may not be
-   * registered from the callback frame — see doctrine
-   * {@code doctrine-wasmtime4j-callback-frame-must-route-all-ops-through-caller-scoped-entrypoints}.
+   * registered from the callback frame — see doctrine {@code
+   * doctrine-wasmtime4j-callback-frame-must-route-all-ops-through-caller-scoped-entrypoints}.
    *
    * @param memoryName name of the caller's exported memory (usually "memory")
    * @param offset byte offset into memory
@@ -433,8 +433,8 @@ public interface Caller<T> {
    * Define a memory extern on a linker using this callback's live store context
    * (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27).
    *
-   * <p>Mirrors {@link Linker#defineMemory(ai.tegmentum.wasmtime4j.Store, String, String, WasmMemory)}
-   * but uses the caller's borrowed {@code AsContextMut} instead of a {@link
+   * <p>Mirrors {@link Linker#defineMemory(ai.tegmentum.wasmtime4j.Store, String, String,
+   * WasmMemory)} but uses the caller's borrowed {@code AsContextMut} instead of a {@link
    * ai.tegmentum.wasmtime4j.Store}, so a host callback can wire memory imports into a linker for a
    * nested {@code InstancePre} without acquiring the store lock (which would deadlock).
    *
@@ -457,8 +457,8 @@ public interface Caller<T> {
   }
 
   /**
-   * Define a table extern on a linker using this callback's live store context.
-   * See {@link #linkerDefineMemory} for scoped-context rationale.
+   * Define a table extern on a linker using this callback's live store context. See {@link
+   * #linkerDefineMemory} for scoped-context rationale.
    *
    * @since 1.5.2
    */
@@ -471,8 +471,8 @@ public interface Caller<T> {
   }
 
   /**
-   * Define a global extern on a linker using this callback's live store context.
-   * See {@link #linkerDefineMemory} for scoped-context rationale.
+   * Define a global extern on a linker using this callback's live store context. See {@link
+   * #linkerDefineMemory} for scoped-context rationale.
    *
    * @since 1.5.2
    */
@@ -488,11 +488,11 @@ public interface Caller<T> {
    * Define a memory extern on a linker by looking it up on the caller by export name
    * (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 addendum, 2026-07-27).
    *
-   * <p>Preferable to {@link #linkerDefineMemory} when the source is the caller's own
-   * export — the api-layer WasmMemory handle path fails because caller-scoped memory
-   * handles from {@code Caller.getMemory} are not registered in the outer memory
-   * registry. This variant uses {@code caller.get_export(callerExportName).into_memory()}
-   * on the native side and bypasses the registry entirely.
+   * <p>Preferable to {@link #linkerDefineMemory} when the source is the caller's own export — the
+   * api-layer WasmMemory handle path fails because caller-scoped memory handles from {@code
+   * Caller.getMemory} are not registered in the outer memory registry. This variant uses {@code
+   * caller.get_export(callerExportName).into_memory()} on the native side and bypasses the registry
+   * entirely.
    *
    * @param linker the linker to define the memory on
    * @param moduleName import module name (e.g. "env")
@@ -513,8 +513,8 @@ public interface Caller<T> {
   }
 
   /**
-   * Define a table extern on a linker by looking it up on the caller by export name.
-   * See {@link #linkerDefineMemoryFromExport} for rationale.
+   * Define a table extern on a linker by looking it up on the caller by export name. See {@link
+   * #linkerDefineMemoryFromExport} for rationale.
    *
    * @since 1.5.2
    */

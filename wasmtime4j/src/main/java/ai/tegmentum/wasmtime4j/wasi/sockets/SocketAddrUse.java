@@ -22,11 +22,11 @@ package ai.tegmentum.wasmtime4j.wasi.sockets;
  * performed with the socket address, allowing fine-grained control over which network operations
  * are permitted.
  *
- * <p>Constants and their FFI codes are aligned with the upstream
- * {@code wasmtime_wasi::sockets::SocketAddrUse} enum. Wasmtime 48 dropped the standalone
- * {@code UDP_CONNECT} check (UDP connect now piggybacks on {@code UDP_BIND}) and renamed the
- * outgoing-datagram check to {@code UDP_SEND}; a symmetric {@code UDP_RECEIVE} check, plus
- * {@code TCP_LISTEN} and {@code TCP_ACCEPT}, are new.
+ * <p>Constants and their FFI codes are aligned with the upstream {@code
+ * wasmtime_wasi::sockets::SocketAddrUse} enum. Wasmtime 48 dropped the standalone {@code
+ * UDP_CONNECT} check (UDP connect now piggybacks on {@code UDP_BIND}) and renamed the
+ * outgoing-datagram check to {@code UDP_SEND}; a symmetric {@code UDP_RECEIVE} check, plus {@code
+ * TCP_LISTEN} and {@code TCP_ACCEPT}, are new.
  *
  * @since 2.0.0
  */
