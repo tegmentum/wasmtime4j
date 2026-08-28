@@ -17,7 +17,7 @@
     <properties>
         <!-- CI-friendly version properties (single source of truth) -->
         <!-- Full version: ${wasmtime.version}-${wasmtime4j.version} -->
-        <wasmtime4j.version>2.0.0</wasmtime4j.version>
+        <wasmtime4j.version>2.0.1</wasmtime4j.version>
         <revision>${wasmtime.version}-${wasmtime4j.version}</revision>
 
         <!-- Java version properties -->

@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [48.0.0-2.0.1] - 2026-08-27
+
+Native-only re-roll of `48.0.0-2.0.0`. The Central-published `48.0.0-2.0.0`
+`wasmtime4j-jni` and `wasmtime4j-native` JARs bundled a
+`darwin-aarch64/libwasmtime4j.dylib` that had been compiled against
+wasmtime `47.0.2` (visible in the dylib's embedded Cargo registry paths
+— `.../wasmtime-wasi-http-47.0.2/src/p2/mod.rs` etc.), NOT the
+`48.0.0` bindings the Java surface expects. The mismatch caused a
+`SIGSEGV` in `Java_..._nativeInstantiateComponentWithWasi` during any
+component instantiation that goes through a `WasiPreview2Config` — the
+new Java signature passes one `int[]` `fs_perms_codes`, but the stale
+47-era dylib still reads two `int[]` perm arrays, so its subsequent
+`read_strings` call landed on the next-parameter pointer as if it
+were a `String[]` and dereferenced null.
+
+No source change; the Java, Rust, and FFI wire are identical to
+`48.0.0-2.0.0`. This release is a straight rebuild-and-republish so
+the native bundles actually contain the 48-era libraries the source
+already declares against. Consumers on `48.0.0-2.0.0` should upgrade
+to `48.0.0-2.0.1`; if you are affected the symptom is a JVM crash on
+component instantiation with an empty or normal `WasiPreview2Config`.
+
+### Fixed
+
+- **`wasmtime4j-native`'s `natives/darwin-aarch64/libwasmtime4j.dylib`
+  (and the derived `wasmtime4j-jni` overlay) now bundle a dylib linked
+  against `wasmtime = 48.0.0`.** The `48.0.0-2.0.0` publish shipped a
+  47-era binary. The root cause was on the release-workflow side, not
+  the source tree; see the paired workflow hardening below.
+
+### Added
+
+- **`Verify native library wasmtime version` preflight in
+  `.github/workflows/release.yml`.** After the `Download plain native
+  libraries` step and before the deploy, the workflow greps every
+  downloaded native binary for `wasmtime-<major>.<minor>.<patch>`
+  registry paths and fails loudly if any binary references a wasmtime
+  version other than `wasmtime.version` from `wasmtime-version.
+  properties`. This catches the same stale-artifact class of bug that
+  produced `48.0.0-2.0.0` before the deploy stage — no source
+  behaviour change; a workflow-only safety net.
+
 ## [48.0.0-2.0.0] - 2026-08-24
 
 First release on the new `wasmtime-48-lts` branch tracking Wasmtime's

@@ -357,6 +357,47 @@ jobs:
           test -f wasmtime4j-native/src/main/resources/natives-wasi-nn-src/linux-aarch64/libwasmtime4j.so
           test -f wasmtime4j-native/src/main/resources/natives-wasi-nn-src/darwin-aarch64/libwasmtime4j.dylib
 
+      # Guard against the 48.0.0-2.0.0 class of bug: a build-native job
+      # somehow uploaded a dylib compiled against the PREVIOUS wasmtime
+      # release. The stale binary linked, packaged, and published without
+      # any test failure because the surviving JNI wire was too close to
+      # the new one to fail cleanly. Every native library carries embedded
+      # crate source paths from the Cargo registry
+      # (`.../wasmtime-wasi-http-<version>/src/...`) — that's an unfakeable
+      # witness of what wasmtime version this binary was actually compiled
+      # against. If any downloaded native references a wasmtime version
+      # other than the release's `wasmtime.version`, fail the publish here
+      # instead of shipping a broken artifact.
+      - name: Verify native libraries were built against the release's wasmtime version
+        shell: bash
+        run: |
+          EXPECTED=$(grep '^wasmtime.version=' wasmtime-version.properties | cut -d= -f2 | tr -d '[:space:]')
+          echo "Release's wasmtime.version = $EXPECTED"
+          FAIL=0
+          for lib in $(find wasmtime4j-native/src/main/resources/natives \
+                                wasmtime4j-native/src/main/resources/natives-wasi-nn-src \
+                                -type f \( -name 'libwasmtime4j.so' -o -name 'libwasmtime4j.dylib' -o -name 'wasmtime4j.dll' \)); do
+            # Every wasmtime-* crate the binary linked against leaves a
+            # `.../wasmtime-<crate>-<ver>/...` path in its debug/rustc metadata.
+            # We only care that NO version other than $EXPECTED shows up.
+            FOUND=$(strings "$lib" 2>/dev/null \
+              | grep -Eo 'wasmtime[-a-z]*-[0-9]+\.[0-9]+\.[0-9]+' \
+              | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' \
+              | sort -u \
+              | tr '\n' ' ')
+            echo "  $lib -> {$FOUND}"
+            for v in $FOUND; do
+              if [ "$v" != "$EXPECTED" ]; then
+                echo "::error file=$lib::native library was built against wasmtime $v, but this release is $EXPECTED"
+                FAIL=1
+              fi
+            done
+          done
+          if [ "$FAIL" -ne 0 ]; then
+            echo "One or more native libraries were built against the wrong wasmtime version — aborting publish."
+            exit 1
+          fi
+
       - name: Extract version from tag
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
